@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wind Waker Randomizer Hint Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="tracker-panel" aria-label="Map and hint notes">
+        <header class="top-bar">
+          <div>
+            <h1>Wind Waker Randomizer Hint Tracker</h1>
+            <p>Live notes, parsed hints, and quick map checkoffs.</p>
+          </div>
+          <div class="top-actions">
+            <span id="dataStatus">Loading data...</span>
+            <button id="resetRunButton" class="danger-button" type="button">Clear Run</button>
+          </div>
+        </header>
+
+        <section class="settings-section" aria-label="Tracker settings">
+          <label class="setting-control page-background-setting">
+            <span>Page background</span>
+            <input id="pageBackgroundInput" type="color" value="#f4f1e8">
+          </label>
+          <label class="setting-control stream-key-setting">
+            <span>Stream key color</span>
+            <input id="streamKeyInput" type="color" value="#00ff00">
+          </label>
+          <label class="setting-toggle stream-mode-setting">
+            <input id="streamModeInput" type="checkbox">
+            <span>Stream mode</span>
+          </label>
+          <label class="setting-toggle compact-mode-setting">
+            <input id="compactModeInput" type="checkbox">
+            <span>Compact mode</span>
+          </label>
+          <label class="setting-toggle">
+            <input id="showHoHoInput" type="checkbox" checked>
+            <span>Show Old Man Ho Ho</span>
+          </label>
+          <label class="setting-toggle">
+            <input id="showBlueChuInput" type="checkbox" checked>
+            <span>Show Blue Chu Jelly</span>
+          </label>
+        </section>
+
+        <div class="map-wrap">
+          <div id="seaGrid" class="sea-grid" aria-label="7 by 7 sea chart"></div>
+          <div id="areaStrip" class="area-strip" aria-label="Off-map and dungeon areas"></div>
+        </div>
+
+        <section class="notes-section">
+          <div class="section-heading">
+            <h2>Hint Notes</h2>
+            <span id="saveStatus">Saved locally</span>
+          </div>
+          <textarea
+            id="hintInput"
+            spellcheck="false"
+            aria-label="Hint notes"
+            placeholder="Type hints here, one per line.&#10;&#10;Examples:&#10;dragon roost to gohma&#10;hookshot at needle rock&#10;progressive sword in dragon roost cavern boss"
+          ></textarea>
+        </section>
+      </section>
+
+      <aside class="hint-panel" aria-label="Parsed hint overview">
+        <section class="parsed-section">
+          <div class="section-heading">
+            <h2>Parsed Hints</h2>
+            <div class="parsed-actions">
+              <button id="undoButton" class="tool-button" type="button">Undo</button>
+              <button id="redoButton" class="tool-button" type="button">Redo</button>
+              <span id="hintCount">0 hints</span>
+            </div>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Hint type filters">
+            <button class="tab active" type="button" data-filter="all">All</button>
+            <button class="tab" type="button" data-filter="path">Path</button>
+            <button class="tab" type="button" data-filter="item">Items</button>
+            <button class="tab" type="button" data-filter="location">Locations</button>
+            <button class="tab" type="button" data-filter="needs-review">Review</button>
+          </div>
+          <div id="hintList" class="hint-list" aria-live="polite"></div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

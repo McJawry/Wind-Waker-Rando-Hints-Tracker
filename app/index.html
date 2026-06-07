@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Wind Waker Randomizer Hint Tracker</title>
+    <title>WWR Hint Tracker</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -11,11 +11,12 @@
       <section class="tracker-panel" aria-label="Map and hint notes">
         <header class="top-bar">
           <div>
-            <h1>Wind Waker Randomizer Hint Tracker</h1>
-            <p>Live notes, parsed hints, and quick map checkoffs.</p>
+            <h1>WWR Hint Tracker</h1>
+            <p id="versionLabel">v0.1.0-dev</p>
           </div>
           <div class="top-actions">
             <span id="dataStatus">Loading data...</span>
+            <button id="hideChromeButton" class="tool-button" type="button">Hide title/settings</button>
             <button id="resetRunButton" class="danger-button" type="button">Clear Run</button>
           </div>
         </header>
@@ -37,6 +38,14 @@
             <input id="compactModeInput" type="checkbox">
             <span>Compact mode</span>
           </label>
+          <label class="setting-control map-icon-size-setting">
+            <span>Item icon size</span>
+            <input id="mapIconSizeInput" type="range" min="70" max="145" value="100">
+          </label>
+          <label class="setting-control hint-arrow-position-setting">
+            <span>Hint arrow position</span>
+            <input id="hintArrowPositionInput" type="range" min="28" max="72" value="50">
+          </label>
           <label class="setting-toggle">
             <input id="showHoHoInput" type="checkbox" checked>
             <span>Show Old Man Ho Ho</span>
@@ -47,8 +56,21 @@
           </label>
         </section>
 
+        <button id="showChromeButton" class="tool-button show-chrome-button" type="button">Show title/settings</button>
+
         <div class="map-wrap">
-          <div id="seaGrid" class="sea-grid" aria-label="7 by 7 sea chart"></div>
+          <div class="map-resize-help">Drag map edge to resize</div>
+          <div id="mapResizeFrame" class="map-resize-frame">
+            <div id="seaGrid" class="sea-grid" aria-label="7 by 7 sea chart"></div>
+            <div class="map-resize-handle top" data-resize-edge="top"></div>
+            <div class="map-resize-handle right" data-resize-edge="right"></div>
+            <div class="map-resize-handle bottom" data-resize-edge="bottom"></div>
+            <div class="map-resize-handle left" data-resize-edge="left"></div>
+            <div class="map-resize-handle corner top-left" data-resize-edge="top-left"></div>
+            <div class="map-resize-handle corner top-right" data-resize-edge="top-right"></div>
+            <div class="map-resize-handle corner bottom-right" data-resize-edge="bottom-right"></div>
+            <div class="map-resize-handle corner bottom-left" data-resize-edge="bottom-left"></div>
+          </div>
           <div id="areaStrip" class="area-strip" aria-label="Off-map and dungeon areas"></div>
         </div>
 
@@ -67,6 +89,7 @@
       </section>
 
       <aside class="hint-panel" aria-label="Parsed hint overview">
+        <div id="hintPanelResizeHandle" class="hint-panel-resize-handle" aria-hidden="true"></div>
         <section class="parsed-section">
           <div class="section-heading">
             <h2>Parsed Hints</h2>

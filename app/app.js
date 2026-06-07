@@ -2,6 +2,7 @@ const STORAGE_KEY = "ww-rando-hint-tracker";
 const CHECKED_KEY = "ww-rando-hint-tracker-checked";
 const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const PREFERENCES_FILE = "preferences.json";
+const APP_VERSION = "1.1.0";
 
 const DATA_FILES = {
   items: "data/item_names.txt",
@@ -57,6 +58,7 @@ const BLUE_CHU_JELLY_SECTORS = [
   "Diamond Steppe Island",
   "Shark Island",
   "Southern Fairy Island",
+  "Thorned Fairy Island",
   "Cliff Plateau Isles",
   "Horseshoe Island",
   "Angular Isles",
@@ -66,8 +68,8 @@ const BLUE_CHU_JELLY_SECTORS = [
 const TRACKED_AREAS = [
   { name: "Dragon Roost Cavern", imageKind: "boss", imageName: "Gohma", matchNames: ["Dragon Roost Cavern"] },
   { name: "Forbidden Woods", imageKind: "boss", imageName: "Kalle Demos", matchNames: ["Forbidden Woods"] },
-  { name: "Tower of the Gods", imageKind: "boss", imageName: "Gohdan", matchNames: ["Tower of the Gods"] },
-  { name: "Forsaken Fortress", imageKind: "boss", imageName: "Helmaroc King", matchNames: ["Forsaken Fortress"] },
+  { name: "Tower of the Gods", imageKind: "boss", imageName: "Gohdan", matchNames: ["Tower of the Gods"], excludedMapTargets: ["Tower of the Gods Sector"] },
+  { name: "Forsaken Fortress", imageKind: "boss", imageName: "Helmaroc King", matchNames: ["Forsaken Fortress"], excludedMapTargets: ["Forsaken Fortress Sector"] },
   { name: "Earth Temple", imageKind: "boss", imageName: "Jalhalla", matchNames: ["Earth Temple"] },
   { name: "Wind Temple", imageKind: "boss", imageName: "Molgera", matchNames: ["Wind Temple"] },
   { name: "Mailbox", imageKind: "misc", imageName: "Mailbox", matchNames: ["Mailbox"] },
@@ -118,6 +120,11 @@ const DISPLAY_ITEM_ALIASES = {
   "Triforce Shard": "Triforce of Courage"
 };
 
+const NUMBERED_ITEM_GROUPS = [
+  { baseName: "Treasure Chart", count: 46, aliases: ["Treasure Map"] },
+  { baseName: "Triforce Chart", count: 8, aliases: [] }
+];
+
 const REQUIREMENT_ALIASES = {
   r: { key: "required", label: "Required" },
   req: { key: "required", label: "Required" },
@@ -160,8 +167,11 @@ const hintInput = document.querySelector("#hintInput");
 const hintList = document.querySelector("#hintList");
 const hintCount = document.querySelector("#hintCount");
 const saveStatus = document.querySelector("#saveStatus");
+const versionLabel = document.querySelector("#versionLabel");
 const dataStatus = document.querySelector("#dataStatus");
 const resetRunButton = document.querySelector("#resetRunButton");
+const hideChromeButton = document.querySelector("#hideChromeButton");
+const showChromeButton = document.querySelector("#showChromeButton");
 const undoButton = document.querySelector("#undoButton");
 const redoButton = document.querySelector("#redoButton");
 const pageBackgroundInput = document.querySelector("#pageBackgroundInput");
@@ -170,6 +180,12 @@ const showHoHoInput = document.querySelector("#showHoHoInput");
 const showBlueChuInput = document.querySelector("#showBlueChuInput");
 const streamModeInput = document.querySelector("#streamModeInput");
 const compactModeInput = document.querySelector("#compactModeInput");
+const mapIconSizeInput = document.querySelector("#mapIconSizeInput");
+const hintArrowPositionInput = document.querySelector("#hintArrowPositionInput");
+const mapResizeFrame = document.querySelector("#mapResizeFrame");
+const mapResizeHandles = document.querySelectorAll(".map-resize-handle");
+const hintPanel = document.querySelector(".hint-panel");
+const hintPanelResizeHandle = document.querySelector("#hintPanelResizeHandle");
 const tabs = document.querySelectorAll(".tab");
 
 function normalize(value) {
@@ -267,11 +283,12 @@ async function loadData() {
       loadText(DATA_FILES.locations)
     ]);
     const items = parseList(itemText);
+    const itemSearchNames = buildItemSearchNames(items);
     const locationData = parseLocationData(locationText);
 
     state.data = {
       items,
-      itemSearchNames: unique([...items, ...Object.keys(ITEM_NAME_ALIASES)]),
+      itemSearchNames,
       bosses: parseList(bossText),
       locations: locationData.locations,
       sectors: locationData.sectors,
@@ -286,6 +303,28 @@ async function loadData() {
   }
 
   updateFromInput();
+}
+
+function buildItemSearchNames(items) {
+  const names = [...items, ...Object.keys(ITEM_NAME_ALIASES)];
+
+  NUMBERED_ITEM_GROUPS.forEach((group) => {
+    if (!items.some((item) => normalize(item) === normalize(group.baseName))) return;
+
+    for (let number = 1; number <= group.count; number += 1) {
+      names.push(`${group.baseName} ${number}`);
+      group.aliases.forEach((alias) => names.push(`${alias} ${number}`));
+    }
+  });
+
+  return unique(names);
+}
+
+function preloadStaticIconImages() {
+  ["Old Man Ho Ho", "Blue Chu Jelly"].forEach((name) => {
+    const image = new Image();
+    image.src = itemImage(name);
+  });
 }
 
 function scoreMatch(query, candidate) {
@@ -446,10 +485,11 @@ function parseLine(rawLine, lineNumber) {
 
 function canonicalizeItemMatch(match) {
   const aliasName = ITEM_NAME_ALIASES[match.name];
+  const numberedAlias = getNumberedItemAlias(match.name);
 
   return {
     ...match,
-    name: aliasName || match.name
+    name: aliasName || numberedAlias || match.name
   };
 }
 
@@ -505,13 +545,38 @@ function buildHint(type, line, lineNumber, first, second, requirement) {
 }
 
 function itemImage(name) {
-  const imageName = ITEM_IMAGE_ALIASES[name] || DISPLAY_ITEM_ALIASES[name] || name;
+  const imageName = ITEM_IMAGE_ALIASES[name] || DISPLAY_ITEM_ALIASES[name] || getNumberedItemBaseName(name) || name;
   return `${IMAGE_ROOTS.items}${encodeURIComponent(imageName)}.png`;
 }
 
 function getShardNumber(name) {
   const match = name.match(/^Triforce Shard\s+([1-8])$/);
   return match ? match[1] : null;
+}
+
+function getNumberedItemAlias(name) {
+  const match = String(name || "").match(/^(Treasure Map)\s+([1-9]|[1-3][0-9]|4[0-6])$/i);
+  return match ? `Treasure Chart ${match[2]}` : null;
+}
+
+function getNumberedItemBaseName(name) {
+  const normalizedName = String(name || "");
+  const group = NUMBERED_ITEM_GROUPS.find((itemGroup) => {
+    const escaped = itemGroup.baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`^${escaped}\\s+\\d+$`, "i").test(normalizedName);
+  });
+
+  return group ? group.baseName : null;
+}
+
+function getItemNumberBadge(name) {
+  const shardNumber = getShardNumber(name);
+  if (shardNumber) return { className: "shard-number", number: shardNumber };
+
+  const chartMatch = String(name || "").match(/^(?:Treasure Chart|Triforce Chart)\s+(\d+)$/i);
+  if (chartMatch) return { className: "chart-number", number: chartMatch[1] };
+
+  return null;
 }
 
 function bossImage(name) {
@@ -563,18 +628,24 @@ function getStaticSectorIcons(sector) {
       id: `old-man-ho-ho:${sector}`,
       type: "hoho",
       title: `Old Man Ho Ho at ${sector}`,
-      image: itemImage("Old Man Ho Ho")
+      image: itemImage("Old Man Ho Ho"),
+      anchorX: 33
     });
   }
 
   if (state.settings.showBlueChu) {
-    BLUE_CHU_JELLY_SECTORS.forEach((name, index) => {
-      if (normalize(name) !== normalize(sector)) return;
+    const jellyMatches = BLUE_CHU_JELLY_SECTORS
+      .map((name, index) => ({ name, index }))
+      .filter((item) => normalize(item.name) === normalize(sector));
+    const jellyAnchors = jellyMatches.length > 1 ? [58, 76] : [67];
+
+    jellyMatches.forEach((item, localIndex) => {
       icons.push({
-        id: `blue-chu-jelly:${sector}:${index}`,
+        id: `blue-chu-jelly:${sector}:${item.index}`,
         type: "blue-chu",
         title: `Blue Chu Jelly at ${sector}`,
-        image: itemImage("Blue Chu Jelly")
+        image: itemImage("Blue Chu Jelly"),
+        anchorX: jellyAnchors[localIndex] || 67
       });
     });
   }
@@ -584,7 +655,7 @@ function getStaticSectorIcons(sector) {
 
 function getSectorHints(sector) {
   return state.hints
-    .filter((hint) => hint.type !== "path" && hint.mapTarget && normalize(hint.mapTarget) === normalize(sector))
+    .filter((hint) => isHintForSector(hint, sector))
     .map((hint) => ({
       id: `${hint.type}:${hint.lineNumber}:${hint.title}`,
       type: hint.type,
@@ -594,23 +665,37 @@ function getSectorHints(sector) {
     }));
 }
 
+function isHintForSector(hint, sector) {
+  if (hint.type === "path" || !hint.mapTarget) return false;
+
+  const target = normalize(hint.mapTarget);
+  const sectorKey = normalize(sector);
+
+  if (sectorKey === normalize("Forsaken Fortress")) {
+    return target === normalize("Forsaken Fortress Sector");
+  }
+
+  return target === sectorKey;
+}
+
 function createMapIcon(icon) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = `map-icon ${icon.type}${state.checked[icon.id] ? " checked" : ""}`;
   button.title = `${icon.title} - click to mark checked`;
+  if (icon.anchorX) button.style.left = `${icon.anchorX}%`;
   button.addEventListener("click", () => toggleChecked(icon.id));
 
   if (icon.image) {
-    const shardNumber = getShardNumber(icon.itemName || "");
+    const itemBadge = getItemNumberBadge(icon.itemName || "");
     const image = document.createElement("img");
     image.src = icon.image;
     image.alt = "";
     button.appendChild(image);
-    if (shardNumber) {
+    if (itemBadge) {
       const badge = document.createElement("span");
-      badge.className = "shard-number";
-      badge.textContent = shardNumber;
+      badge.className = `item-number ${itemBadge.className}`;
+      badge.textContent = itemBadge.number;
       button.appendChild(badge);
     }
   } else {
@@ -653,7 +738,11 @@ function renderAreaStrip() {
 
 function getAreaHints(area) {
   return state.hints
-    .filter((hint) => hint.type !== "path" && area.matchNames.some((name) => normalize(name) === normalize(hint.mapTarget)))
+    .filter((hint) => {
+      if (hint.type === "path") return false;
+      if (area.excludedMapTargets?.some((name) => normalize(name) === normalize(hint.mapTarget))) return false;
+      return area.matchNames.some((name) => normalize(name) === normalize(hint.mapTarget));
+    })
     .map((hint) => ({
       id: `${hint.type}:${hint.lineNumber}:${hint.title}`,
       type: hint.type,
@@ -758,11 +847,11 @@ function renderHintSide(side, position, hint) {
       const itemBox = document.createElement("div");
       itemBox.className = "stream-item-box";
       itemBox.appendChild(image);
-      const shardNumber = getShardNumber(side.name);
-      if (shardNumber) {
+      const itemBadge = getItemNumberBadge(side.name);
+      if (itemBadge) {
         const badge = document.createElement("span");
-        badge.className = "shard-number";
-        badge.textContent = shardNumber;
+        badge.className = `item-number ${itemBadge.className}`;
+        badge.textContent = itemBadge.number;
         itemBox.appendChild(badge);
       }
       if (hint.requirement || hint.needsReview) {
@@ -816,7 +905,12 @@ function loadSettings() {
     showHoHo: true,
     showBlueChu: true,
     streamMode: false,
-    compactMode: false
+    compactMode: false,
+    chromeHidden: false,
+    mapSize: null,
+    mapIconSize: 100,
+    hintPanelWidth: 360,
+    hintArrowPosition: 50
   };
 
   try {
@@ -854,17 +948,48 @@ function saveSettings() {
 function applySettings() {
   document.documentElement.style.setProperty("--bg", state.settings.pageBackground);
   document.documentElement.style.setProperty("--stream-key", state.settings.streamKey);
+  document.documentElement.style.setProperty("--hint-panel-width", `${state.settings.hintPanelWidth}px`);
+  document.documentElement.style.setProperty("--hint-arrow-position", `${state.settings.hintArrowPosition}%`);
+  if (state.settings.mapSize) {
+    document.documentElement.style.setProperty("--user-map-size", `${state.settings.mapSize}px`);
+  } else {
+    document.documentElement.style.removeProperty("--user-map-size");
+  }
+  applyMapIconSize();
   pageBackgroundInput.value = state.settings.pageBackground;
   streamKeyInput.value = state.settings.streamKey;
   showHoHoInput.checked = state.settings.showHoHo;
   showBlueChuInput.checked = state.settings.showBlueChu;
   streamModeInput.checked = state.settings.streamMode;
   compactModeInput.checked = state.settings.compactMode;
+  mapIconSizeInput.value = state.settings.mapIconSize;
+  hintArrowPositionInput.value = state.settings.hintArrowPosition;
   document.body.classList.toggle("stream-mode", state.settings.streamMode);
   document.body.classList.toggle("compact-mode", state.settings.compactMode);
+  document.body.classList.toggle("chrome-hidden", state.settings.chromeHidden);
   renderGrid();
-  renderAreaStrip();
 }
+
+function applyMapIconSize() {
+  const mapSize = seaGrid.getBoundingClientRect().width || state.settings.mapSize || 460;
+  const sectorSize = mapSize / 7;
+  const sliderScale = state.settings.mapIconSize / 100;
+  const iconSize = clampNumber(sectorSize * 0.25 * sliderScale, 10, sectorSize * 0.32);
+  document.documentElement.style.setProperty("--item-map-icon-size", `${Math.round(iconSize)}px`);
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getCurrentMapSize() {
+  return Math.round(seaGrid.getBoundingClientRect().width || state.settings.mapSize || 460);
+}
+
+const seaGridResizeObserver = new ResizeObserver(() => {
+  applyMapIconSize();
+});
+seaGridResizeObserver.observe(seaGrid);
 
 function pushHistory(value) {
   if (state.isApplyingHistory) return;
@@ -921,7 +1046,7 @@ function updateFromInput(options = {}) {
 
 function resizeHintInput() {
   hintInput.style.height = "auto";
-  hintInput.style.height = `${Math.max(180, hintInput.scrollHeight)}px`;
+  hintInput.style.height = `${Math.max(135, hintInput.scrollHeight)}px`;
 }
 
 hintInput.addEventListener("input", () => {
@@ -947,13 +1072,13 @@ streamKeyInput.addEventListener("input", () => {
 showHoHoInput.addEventListener("change", () => {
   state.settings.showHoHo = showHoHoInput.checked;
   saveSettings();
-  applySettings();
+  renderGrid();
 });
 
 showBlueChuInput.addEventListener("change", () => {
   state.settings.showBlueChu = showBlueChuInput.checked;
   saveSettings();
-  applySettings();
+  renderGrid();
 });
 
 streamModeInput.addEventListener("change", () => {
@@ -964,6 +1089,114 @@ streamModeInput.addEventListener("change", () => {
 
 compactModeInput.addEventListener("change", () => {
   state.settings.compactMode = compactModeInput.checked;
+  saveSettings();
+  applySettings();
+});
+
+mapIconSizeInput.addEventListener("input", () => {
+  state.settings.mapIconSize = Number(mapIconSizeInput.value);
+  applyMapIconSize();
+  saveSettings();
+});
+
+hintArrowPositionInput.addEventListener("input", () => {
+  state.settings.hintArrowPosition = Number(hintArrowPositionInput.value);
+  document.documentElement.style.setProperty("--hint-arrow-position", `${state.settings.hintArrowPosition}%`);
+  saveSettings();
+});
+
+hideChromeButton.addEventListener("click", () => {
+  state.settings.chromeHidden = true;
+  saveSettings();
+  applySettings();
+});
+
+function getResizeDelta(edge, deltaX, deltaY) {
+  const horizontalDelta = edge.includes("left") ? -deltaX : edge.includes("right") ? deltaX : 0;
+  const verticalDelta = edge.includes("top") ? -deltaY : edge.includes("bottom") ? deltaY : 0;
+
+  if (horizontalDelta && verticalDelta) {
+    return Math.abs(horizontalDelta) > Math.abs(verticalDelta) ? horizontalDelta : verticalDelta;
+  }
+
+  return horizontalDelta || verticalDelta;
+}
+
+function startMapResize(event) {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const startSize = getCurrentMapSize();
+  const minSize = 280;
+  const maxSize = 760;
+  const edge = event.currentTarget.dataset.resizeEdge;
+  const handle = event.currentTarget;
+
+  mapResizeFrame.classList.add("resizing");
+  handle.setPointerCapture(event.pointerId);
+
+  const handleMove = (moveEvent) => {
+    if (!(moveEvent.buttons & 1)) return;
+    const delta = getResizeDelta(edge, moveEvent.clientX - startX, moveEvent.clientY - startY);
+    const nextSize = clampNumber(startSize + delta, minSize, maxSize);
+    state.settings.mapSize = Math.round(nextSize);
+    document.documentElement.style.setProperty("--user-map-size", `${state.settings.mapSize}px`);
+    applyMapIconSize();
+  };
+
+  const handleUp = (upEvent) => {
+    mapResizeFrame.classList.remove("resizing");
+    if (handle.hasPointerCapture(upEvent.pointerId)) handle.releasePointerCapture(upEvent.pointerId);
+    window.removeEventListener("pointermove", handleMove);
+    window.removeEventListener("pointerup", handleUp);
+    window.removeEventListener("pointercancel", handleUp);
+    saveSettings();
+  };
+
+  window.addEventListener("pointermove", handleMove);
+  window.addEventListener("pointerup", handleUp);
+  window.addEventListener("pointercancel", handleUp);
+}
+
+mapResizeHandles.forEach((handle) => {
+  handle.addEventListener("pointerdown", startMapResize);
+});
+
+hintPanelResizeHandle.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  const startX = event.clientX;
+  const startWidth = hintPanel.getBoundingClientRect().width || state.settings.hintPanelWidth;
+  const minWidth = 240;
+  const maxWidth = Math.min(520, window.innerWidth - 24);
+
+  hintPanel.classList.add("resizing");
+  hintPanelResizeHandle.setPointerCapture(event.pointerId);
+
+  const handleMove = (moveEvent) => {
+    if (!(moveEvent.buttons & 1)) return;
+    const nextWidth = clampNumber(startWidth + startX - moveEvent.clientX, minWidth, maxWidth);
+    state.settings.hintPanelWidth = Math.round(nextWidth);
+    document.documentElement.style.setProperty("--hint-panel-width", `${state.settings.hintPanelWidth}px`);
+  };
+
+  const handleUp = (upEvent) => {
+    hintPanel.classList.remove("resizing");
+    if (hintPanelResizeHandle.hasPointerCapture(upEvent.pointerId)) hintPanelResizeHandle.releasePointerCapture(upEvent.pointerId);
+    window.removeEventListener("pointermove", handleMove);
+    window.removeEventListener("pointerup", handleUp);
+    window.removeEventListener("pointercancel", handleUp);
+    saveSettings();
+  };
+
+  window.addEventListener("pointermove", handleMove);
+  window.addEventListener("pointerup", handleUp);
+  window.addEventListener("pointercancel", handleUp);
+});
+
+showChromeButton.addEventListener("click", () => {
+  state.settings.chromeHidden = false;
   saveSettings();
   applySettings();
 });
@@ -991,7 +1224,9 @@ resetRunButton.addEventListener("click", () => {
 });
 
 hintInput.value = localStorage.getItem(STORAGE_KEY) || "";
+versionLabel.textContent = `v${APP_VERSION}`;
 applySettings();
+preloadStaticIconImages();
 loadPreferences();
 pushHistory(hintInput.value);
 updateHistoryButtons();

@@ -4,5 +4,10 @@
   "showHoHo": true,
   "showBlueChu": true,
   "streamMode": false,
-  "compactMode": false
+  "compactMode": false,
+  "chromeHidden": true,
+  "mapSize": 545,
+  "mapIconSize": 143,
+  "hintPanelWidth": 354,
+  "hintArrowPosition": 50
 }

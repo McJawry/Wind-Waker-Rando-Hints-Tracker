@@ -2,7 +2,7 @@ const STORAGE_KEY = "ww-rando-hint-tracker";
 const CHECKED_KEY = "ww-rando-hint-tracker-checked";
 const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 
 const DATA_FILES = {
   items: "data/item_names.txt",

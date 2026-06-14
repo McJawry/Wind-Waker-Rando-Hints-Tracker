@@ -5,9 +5,10 @@
   "showBlueChu": true,
   "streamMode": false,
   "compactMode": false,
-  "chromeHidden": true,
-  "mapSize": 545,
-  "mapIconSize": 143,
-  "hintPanelWidth": 354,
-  "hintArrowPosition": 50
+  "chromeHidden": false,
+  "mapSize": 450,
+  "mapIconSize": 145,
+  "hintPanelWidth": 269,
+  "hintArrowPosition": 49,
+  "startingGearShards": []
 }

@@ -2,7 +2,22 @@ const STORAGE_KEY = "ww-rando-hint-tracker";
 const CHECKED_KEY = "ww-rando-hint-tracker-checked";
 const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.2.0";
+
+const DEFAULT_SETTINGS = {
+  pageBackground: "#f4f1e8",
+  streamKey: "#00ff00",
+  showHoHo: true,
+  showBlueChu: true,
+  streamMode: false,
+  compactMode: false,
+  chromeHidden: false,
+  mapSize: null,
+  mapIconSize: 100,
+  hintPanelWidth: 360,
+  hintArrowPosition: 50,
+  startingGearShards: []
+};
 
 const DATA_FILES = {
   items: "data/item_names.txt",
@@ -113,7 +128,8 @@ const ITEM_NAME_ALIASES = {
   "Cheese 6": "Triforce Shard 6",
   "Cheese 7": "Triforce Shard 7",
   "Cheese 8": "Triforce Shard 8",
-  "Bombs": "Bomb"
+  "Bombs": "Bomb",
+  "Grapple": "Grappling Hook"
 };
 
 const DISPLAY_ITEM_ALIASES = {
@@ -186,7 +202,17 @@ const mapResizeFrame = document.querySelector("#mapResizeFrame");
 const mapResizeHandles = document.querySelectorAll(".map-resize-handle");
 const hintPanel = document.querySelector(".hint-panel");
 const hintPanelResizeHandle = document.querySelector("#hintPanelResizeHandle");
+const blueChuCount = document.querySelector("#blueChuCount");
+const shardStatusList = document.querySelector("#shardStatusList");
+const shardPreview = document.querySelector("#shardPreview");
+const shardPreviewImage = document.querySelector("#shardPreviewImage");
+const browseRandoFolderButton = document.querySelector("#browseRandoFolderButton");
+const syncRandoConfigButton = document.querySelector("#syncRandoConfigButton");
+const randoFolderInput = document.querySelector("#randoFolderInput");
+const randoFolderStatus = document.querySelector("#randoFolderStatus");
 const tabs = document.querySelectorAll(".tab");
+let randoFolderHandle = null;
+let randoFolderFiles = null;
 
 function normalize(value) {
   return String(value || "")
@@ -594,6 +620,9 @@ function renderGrid() {
     const cell = document.createElement("div");
     cell.className = "sector";
     cell.dataset.sector = sector;
+    cell.addEventListener("dragover", handleSectorDragOver);
+    cell.addEventListener("dragleave", handleSectorDragLeave);
+    cell.addEventListener("drop", (event) => handleSectorDrop(event, sector));
 
     const label = document.createElement("div");
     label.className = "sector-label";
@@ -618,6 +647,120 @@ function renderGrid() {
   });
 
   renderAreaStrip();
+  renderMapSideTab();
+}
+
+function renderMapSideTab() {
+  blueChuCount.closest(".jelly-counter").hidden = !state.settings.showBlueChu;
+  blueChuCount.textContent = Object.keys(state.checked).filter((id) => id.startsWith("blue-chu-jelly:")).length;
+  shardStatusList.innerHTML = "";
+
+  for (let number = 1; number <= 8; number += 1) {
+    const shardName = `Triforce Shard ${number}`;
+    const shardHints = getShardHints(number);
+    const shardHintIds = shardHints.map(getHintIconId);
+    const fallbackId = `triforce-shard-status:${number}`;
+    const isHinted = shardHints.length > 0;
+    const isChecked = shardHintIds.length ? shardHintIds.every((id) => state.checked[id]) : Boolean(state.checked[fallbackId]);
+    const isStartingGear = state.settings.startingGearShards.includes(number);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.draggable = true;
+    button.dataset.shardNumber = number;
+    button.className = `shard-status${isHinted ? " hinted" : ""}${isChecked ? " checked" : ""}${isStartingGear ? " starting" : ""}`;
+    button.title = `${shardName}${isStartingGear ? " - starting gear" : isHinted ? "" : " - not hinted"}${isChecked ? " - checked" : ""}`;
+    button.addEventListener("click", () => {
+      const nextChecked = !isChecked;
+      setChecked(fallbackId, nextChecked);
+      shardHintIds.forEach((id) => setChecked(id, nextChecked));
+      localStorage.setItem(CHECKED_KEY, JSON.stringify(state.checked));
+      renderGrid();
+    });
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      toggleStartingGearShard(number);
+    });
+    button.addEventListener("dragstart", (event) => {
+      hideShardPreview();
+      event.dataTransfer.setData("text/plain", `Triforce Shard ${number}`);
+      event.dataTransfer.setData("application/x-wwr-shard", String(number));
+      event.dataTransfer.effectAllowed = "copy";
+    });
+    button.addEventListener("mouseenter", () => showShardPreview(shardName));
+    button.addEventListener("focus", () => showShardPreview(shardName));
+    button.addEventListener("mouseleave", hideShardPreview);
+    button.addEventListener("blur", hideShardPreview);
+
+    const image = document.createElement("img");
+    image.src = itemImage(shardName);
+    image.alt = shardName;
+    button.appendChild(image);
+    const badge = document.createElement("span");
+    badge.className = "item-number shard-number";
+    badge.textContent = number;
+    button.appendChild(badge);
+    if (isStartingGear) {
+      const cross = document.createElement("span");
+      cross.className = "starting-cross";
+      button.appendChild(cross);
+    }
+    shardStatusList.appendChild(button);
+  }
+}
+
+function getShardHints(number) {
+  const shardName = `Triforce Shard ${number}`;
+  return state.hints.filter((hint) => hint.left?.name === shardName);
+}
+
+function showShardPreview(shardName) {
+  shardPreviewImage.src = miscImage(`${shardName} Highlight`);
+  shardPreviewImage.alt = shardName;
+  shardPreview.hidden = false;
+}
+
+function hideShardPreview() {
+  shardPreview.hidden = true;
+}
+
+function toggleStartingGearShard(number) {
+  const startingShards = new Set(state.settings.startingGearShards);
+  if (startingShards.has(number)) {
+    startingShards.delete(number);
+  } else {
+    startingShards.add(number);
+  }
+
+  state.settings.startingGearShards = [...startingShards].sort((a, b) => a - b);
+  saveSettings();
+  renderGrid();
+}
+
+function handleSectorDragOver(event) {
+  if (!event.dataTransfer.types.includes("application/x-wwr-shard")) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+  event.currentTarget.classList.add("drag-target");
+}
+
+function handleSectorDrop(event, sector) {
+  const shardNumber = Number(event.dataTransfer.getData("application/x-wwr-shard"));
+  event.currentTarget.classList.remove("drag-target");
+  if (!shardNumber) return;
+
+  event.preventDefault();
+  appendHintLine(`Triforce Shard ${shardNumber} at ${sector}`);
+}
+
+function handleSectorDragLeave(event) {
+  event.currentTarget.classList.remove("drag-target");
+}
+
+function appendHintLine(line) {
+  const currentText = hintInput.value.trimEnd();
+  hintInput.value = currentText ? `${currentText}\n${line}` : line;
+  updateFromInput();
 }
 
 function getStaticSectorIcons(sector) {
@@ -657,12 +800,16 @@ function getSectorHints(sector) {
   return state.hints
     .filter((hint) => isHintForSector(hint, sector))
     .map((hint) => ({
-      id: `${hint.type}:${hint.lineNumber}:${hint.title}`,
+      id: getHintIconId(hint),
       type: hint.type,
       title: hint.title,
       image: hint.left?.image || null,
       itemName: hint.left?.name || ""
     }));
+}
+
+function getHintIconId(hint) {
+  return `${hint.type}:${hint.lineNumber}:${hint.title}`;
 }
 
 function isHintForSector(hint, sector) {
@@ -744,7 +891,7 @@ function getAreaHints(area) {
       return area.matchNames.some((name) => normalize(name) === normalize(hint.mapTarget));
     })
     .map((hint) => ({
-      id: `${hint.type}:${hint.lineNumber}:${hint.title}`,
+      id: getHintIconId(hint),
       type: hint.type,
       title: hint.title,
       image: hint.left?.image || null,
@@ -890,6 +1037,14 @@ function toggleChecked(id) {
   renderGrid();
 }
 
+function setChecked(id, isChecked) {
+  if (isChecked) {
+    state.checked[id] = true;
+  } else {
+    delete state.checked[id];
+  }
+}
+
 function loadChecked() {
   try {
     return JSON.parse(localStorage.getItem(CHECKED_KEY)) || {};
@@ -899,24 +1054,14 @@ function loadChecked() {
 }
 
 function loadSettings() {
-  const defaults = {
-    pageBackground: "#f4f1e8",
-    streamKey: "#00ff00",
-    showHoHo: true,
-    showBlueChu: true,
-    streamMode: false,
-    compactMode: false,
-    chromeHidden: false,
-    mapSize: null,
-    mapIconSize: 100,
-    hintPanelWidth: 360,
-    hintArrowPosition: 50
-  };
+  return { ...DEFAULT_SETTINGS, ...readStoredSettings() };
+}
 
+function readStoredSettings() {
   try {
-    return { ...defaults, ...(JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}) };
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {};
   } catch {
-    return defaults;
+    return {};
   }
 }
 
@@ -926,16 +1071,18 @@ async function loadPreferences() {
     if (!response.ok) return;
 
     const preferences = await response.json();
-    state.settings = { ...state.settings, ...preferences };
+    state.settings = { ...DEFAULT_SETTINGS, ...preferences, ...readStoredSettings() };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
     applySettings();
   } catch {
-    // Opening the app without the launcher cannot read the preferences file.
+    // Browser storage remains the source of truth when preferences.json cannot be read.
   }
 }
 
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+  if (!canWritePreferencesFile()) return;
+
   fetch(PREFERENCES_FILE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -943,6 +1090,10 @@ function saveSettings() {
   }).catch(() => {
     // Local storage remains the fallback when the launcher is not running.
   });
+}
+
+function canWritePreferencesFile() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
 }
 
 function applySettings() {
@@ -984,6 +1135,105 @@ function clampNumber(value, min, max) {
 
 function getCurrentMapSize() {
   return Math.round(seaGrid.getBoundingClientRect().width || state.settings.mapSize || 460);
+}
+
+async function browseRandoFolder() {
+  if (window.showDirectoryPicker) {
+    try {
+      randoFolderHandle = await window.showDirectoryPicker();
+      randoFolderFiles = null;
+      randoFolderStatus.textContent = randoFolderHandle.name;
+      syncRandoConfigButton.disabled = false;
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        randoFolderStatus.textContent = "Choose folder with randomizer .exe";
+      }
+    }
+    return;
+  }
+
+  randoFolderInput.click();
+}
+
+async function readLinkedConfigText() {
+  if (randoFolderHandle) {
+    const configHandle = await randoFolderHandle.getFileHandle("config.yaml");
+    const configFile = await configHandle.getFile();
+    return configFile.text();
+  }
+
+  if (randoFolderFiles) {
+    const configFile = [...randoFolderFiles].find((file) => {
+      const path = file.webkitRelativePath || file.name;
+      return /(^|\/)config\.yaml$/i.test(path);
+    });
+    if (!configFile) throw new Error("config.yaml not found");
+    return configFile.text();
+  }
+
+  throw new Error("No randomizer folder linked");
+}
+
+function getYamlBoolean(text, key) {
+  const match = text.match(new RegExp(`^\\s*${key}\\s*:\\s*(true|false)\\b`, "im"));
+  return match ? match[1].toLowerCase() === "true" : false;
+}
+
+function getYamlListSection(text, sectionName) {
+  const lines = text.split(/\r?\n/);
+  const values = [];
+  const sectionIndex = lines.findIndex((line) => new RegExp(`^\\s*${sectionName}\\s*:`).test(line));
+  if (sectionIndex < 0) return values;
+
+  const sectionLine = lines[sectionIndex];
+  const inlineMatch = sectionLine.match(/:\s*\[(.*)\]\s*(?:#.*)?$/);
+  if (inlineMatch) {
+    return inlineMatch[1]
+      .split(",")
+      .map(cleanYamlValue)
+      .filter(Boolean);
+  }
+
+  const baseIndent = sectionLine.match(/^\s*/)[0].length;
+  for (let index = sectionIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!line.trim() || line.trimStart().startsWith("#")) continue;
+
+    const indent = line.match(/^\s*/)[0].length;
+    if (indent <= baseIndent && !line.trimStart().startsWith("-")) break;
+
+    const itemMatch = line.match(/^\s*-\s*(.*?)\s*(?:#.*)?$/);
+    if (itemMatch) values.push(cleanYamlValue(itemMatch[1]));
+  }
+
+  return values.filter(Boolean);
+}
+
+function cleanYamlValue(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^["']|["']$/g, "");
+}
+
+function getStartingGearShards(configText) {
+  return getYamlListSection(configText, "starting_gear")
+    .map((item) => item.match(/^Triforce Shard\s+([1-8])$/i))
+    .filter(Boolean)
+    .map((match) => Number(match[1]));
+}
+
+function applyRandoConfig(configText) {
+  const hoHoHints = getYamlBoolean(configText, "ho_ho_triforce_hints") || getYamlBoolean(configText, "ho_ho_hints");
+  const progressionSpoilsTrading = getYamlBoolean(configText, "progression_spoils_trading");
+  const progressionLongSidequests = getYamlBoolean(configText, "progression_long_sidequests");
+  const excludedLocations = getYamlListSection(configText, "excluded_locations").map(normalize);
+  const potionShopExcluded = excludedLocations.includes(normalize("Windfall Island - Potion Shop 15 Blue Chu"));
+
+  state.settings.showHoHo = hoHoHints;
+  state.settings.showBlueChu = progressionSpoilsTrading && progressionLongSidequests && !potionShopExcluded;
+  state.settings.startingGearShards = getStartingGearShards(configText);
+  saveSettings();
+  applySettings();
 }
 
 const seaGridResizeObserver = new ResizeObserver(() => {
@@ -1105,6 +1355,31 @@ hintArrowPositionInput.addEventListener("input", () => {
   saveSettings();
 });
 
+browseRandoFolderButton.addEventListener("click", browseRandoFolder);
+
+randoFolderInput.addEventListener("change", () => {
+  randoFolderFiles = randoFolderInput.files;
+  randoFolderHandle = null;
+  const firstFile = randoFolderFiles?.[0];
+  const folderName = firstFile?.webkitRelativePath?.split("/")[0] || "Folder linked";
+  randoFolderStatus.textContent = randoFolderFiles?.length ? folderName : "Choose folder with randomizer .exe";
+  syncRandoConfigButton.disabled = !randoFolderFiles?.length;
+});
+
+syncRandoConfigButton.addEventListener("click", async () => {
+  try {
+    syncRandoConfigButton.disabled = true;
+    randoFolderStatus.textContent = "Syncing...";
+    const configText = await readLinkedConfigText();
+    applyRandoConfig(configText);
+    randoFolderStatus.textContent = "Synced";
+  } catch {
+    randoFolderStatus.textContent = "config.yaml not found";
+  } finally {
+    syncRandoConfigButton.disabled = !(randoFolderHandle || randoFolderFiles?.length);
+  }
+});
+
 hideChromeButton.addEventListener("click", () => {
   state.settings.chromeHidden = true;
   saveSettings();
@@ -1216,8 +1491,10 @@ resetRunButton.addEventListener("click", () => {
 
   hintInput.value = "";
   state.checked = {};
+  state.settings.startingGearShards = [];
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(CHECKED_KEY);
+  saveSettings();
   state.history = [];
   state.historyIndex = -1;
   updateFromInput();

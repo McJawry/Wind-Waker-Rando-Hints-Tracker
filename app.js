@@ -128,7 +128,8 @@ const ITEM_NAME_ALIASES = {
   "Cheese 6": "Triforce Shard 6",
   "Cheese 7": "Triforce Shard 7",
   "Cheese 8": "Triforce Shard 8",
-  "Bombs": "Bomb"
+  "Bombs": "Bomb",
+  "Grapple": "Grappling Hook"
 };
 
 const DISPLAY_ITEM_ALIASES = {

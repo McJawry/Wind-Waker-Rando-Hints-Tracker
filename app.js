@@ -203,6 +203,8 @@ const hintPanel = document.querySelector(".hint-panel");
 const hintPanelResizeHandle = document.querySelector("#hintPanelResizeHandle");
 const blueChuCount = document.querySelector("#blueChuCount");
 const shardStatusList = document.querySelector("#shardStatusList");
+const shardPreview = document.querySelector("#shardPreview");
+const shardPreviewImage = document.querySelector("#shardPreviewImage");
 const browseRandoFolderButton = document.querySelector("#browseRandoFolderButton");
 const syncRandoConfigButton = document.querySelector("#syncRandoConfigButton");
 const randoFolderInput = document.querySelector("#randoFolderInput");
@@ -648,6 +650,7 @@ function renderGrid() {
 }
 
 function renderMapSideTab() {
+  blueChuCount.closest(".jelly-counter").hidden = !state.settings.showBlueChu;
   blueChuCount.textContent = Object.keys(state.checked).filter((id) => id.startsWith("blue-chu-jelly:")).length;
   shardStatusList.innerHTML = "";
 
@@ -678,10 +681,15 @@ function renderMapSideTab() {
       toggleStartingGearShard(number);
     });
     button.addEventListener("dragstart", (event) => {
+      hideShardPreview();
       event.dataTransfer.setData("text/plain", `Triforce Shard ${number}`);
       event.dataTransfer.setData("application/x-wwr-shard", String(number));
       event.dataTransfer.effectAllowed = "copy";
     });
+    button.addEventListener("mouseenter", () => showShardPreview(shardName));
+    button.addEventListener("focus", () => showShardPreview(shardName));
+    button.addEventListener("mouseleave", hideShardPreview);
+    button.addEventListener("blur", hideShardPreview);
 
     const image = document.createElement("img");
     image.src = itemImage(shardName);
@@ -703,6 +711,16 @@ function renderMapSideTab() {
 function getShardHints(number) {
   const shardName = `Triforce Shard ${number}`;
   return state.hints.filter((hint) => hint.left?.name === shardName);
+}
+
+function showShardPreview(shardName) {
+  shardPreviewImage.src = miscImage(`${shardName} Highlight`);
+  shardPreviewImage.alt = shardName;
+  shardPreview.hidden = false;
+}
+
+function hideShardPreview() {
+  shardPreview.hidden = true;
 }
 
 function toggleStartingGearShard(number) {

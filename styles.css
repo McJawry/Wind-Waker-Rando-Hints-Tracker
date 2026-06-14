@@ -294,10 +294,36 @@ body:not(.stream-mode) .stream-key-setting {
 }
 
 .map-main-row {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 5px;
   width: min(100%, calc(var(--map-size) + var(--map-side-tab-width) + 5px));
+}
+
+.shard-preview {
+  position: absolute;
+  z-index: 12;
+  top: 31%;
+  right: calc(var(--map-side-tab-width) + 13px);
+  display: grid;
+  place-items: center;
+  width: 129px;
+  height: 129px;
+  border: 3px solid #df1f1f;
+  background: #000;
+  pointer-events: none;
+}
+
+.shard-preview[hidden] {
+  display: none;
+}
+
+.shard-preview img {
+  width: 84%;
+  height: 84%;
+  object-fit: contain;
+  filter: none;
 }
 
 .map-resize-frame {
@@ -329,6 +355,10 @@ body:not(.stream-mode) .stream-key-setting {
   color: var(--ink);
   font-size: 0.72rem;
   font-weight: 900;
+}
+
+.jelly-counter[hidden] {
+  display: none;
 }
 
 .jelly-counter img {

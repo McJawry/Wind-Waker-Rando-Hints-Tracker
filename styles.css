@@ -1,3 +1,15 @@
+@font-face {
+  font-family: "Reggae One";
+  src: url("assets/fonts/ReggaeOne-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RocknRoll One";
+  src: url("assets/fonts/RocknRollOne-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
   --bg: #f4f1e8;
@@ -25,6 +37,7 @@
   --map-size: var(--user-map-size, var(--auto-map-size));
   --map-icon-size: 22px;
   --item-map-icon-size: 30px;
+  --map-side-tab-width: 46px;
   --hint-panel-width: 360px;
   --hint-arrow-position: 50%;
   --hidden-chrome-map-size: clamp(360px, calc(100vh - 285px), 620px);
@@ -35,6 +48,10 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 15px;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -42,7 +59,7 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
     var(--bg);
   color: var(--ink);
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: "RocknRoll One", "Segoe UI", Arial, sans-serif;
 }
 
 body.stream-mode {
@@ -84,8 +101,8 @@ body.compact-mode .app-shell {
   display: grid;
   gap: 10px;
   justify-self: start;
-  width: calc(var(--map-size) + 18px);
-  min-width: 298px;
+  width: calc(var(--map-size) + var(--map-side-tab-width) + 24px);
+  min-width: 350px;
 }
 
 body.compact-mode .tracker-panel {
@@ -102,6 +119,10 @@ body.compact-mode .setting-toggle:has(#showBlueChuInput) {
 
 body.compact-mode .hint-arrow-position-setting {
   display: inline-flex;
+}
+
+body.compact-mode .rando-folder-setting {
+  display: none;
 }
 
 body.chrome-hidden .top-bar,
@@ -139,7 +160,8 @@ p {
 }
 
 h1 {
-  font-size: 1.18rem;
+  font-family: "Reggae One", "RocknRoll One", "Segoe UI", Arial, sans-serif;
+  font-size: 1.1rem;
   line-height: 1.2;
 }
 
@@ -242,17 +264,40 @@ body:not(.stream-mode) .stream-key-setting {
   accent-color: var(--accent);
 }
 
+.mini-button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 0.78rem;
+}
+
+.setting-status {
+  max-width: 130px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .map-wrap {
   display: grid;
-  place-items: center;
+  align-items: center;
+  justify-items: start;
   gap: 5px;
   justify-self: start;
-  width: min(100%, calc(var(--map-size) + 18px));
+  width: min(100%, calc(var(--map-size) + var(--map-side-tab-width) + 24px));
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
+}
+
+.map-main-row {
+  display: flex;
+  align-items: stretch;
+  gap: 5px;
+  width: min(100%, calc(var(--map-size) + var(--map-side-tab-width) + 5px));
 }
 
 .map-resize-frame {
@@ -261,8 +306,145 @@ body:not(.stream-mode) .stream-key-setting {
   max-width: var(--map-size);
 }
 
+.map-side-tab {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  justify-items: center;
+  gap: 8px;
+  width: var(--map-side-tab-width);
+  min-width: var(--map-side-tab-width);
+  padding: 5px 4px;
+  border: 1px solid rgba(32, 51, 59, 0.45);
+  border-radius: 6px;
+  background: rgba(255, 253, 247, 0.86);
+}
+
+.jelly-counter {
+  display: grid;
+  grid-template-columns: 18px auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.jelly-counter img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.shard-status-list {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+}
+
+.shard-status {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 25px;
+  filter: grayscale(1);
+  opacity: 0.36;
+}
+
+.shard-status.hinted {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  opacity: 1;
+}
+
+.shard-status.checked {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  opacity: 1;
+}
+
+.shard-status.checked::after {
+  content: "";
+  grid-area: 1 / 1;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(55, 190, 95, 0.55);
+  mix-blend-mode: color;
+  pointer-events: none;
+}
+
+.shard-status .item-number {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25em;
+  height: 1em;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #101418;
+  font-size: 54%;
+  font-weight: 900;
+  line-height: 1;
+  justify-self: end;
+  text-shadow: none;
+  transform: translateX(58%);
+}
+
+.shard-status .starting-cross {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 3;
+  width: 130%;
+  height: 130%;
+  pointer-events: none;
+}
+
+.shard-status .starting-cross::before,
+.shard-status .starting-cross::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 118%;
+  height: 4px;
+  border-radius: 999px;
+  background: #d01818;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
+  transform-origin: center;
+}
+
+.shard-status .starting-cross::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.shard-status .starting-cross::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.shard-status img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .map-resize-help {
   z-index: 4;
+  justify-self: start;
+  width: min(100%, var(--map-size));
+  text-align: center;
   padding: 1px 6px;
   border-radius: 999px;
   background: rgba(255, 253, 247, 0.72);
@@ -365,6 +547,12 @@ body:not(.stream-mode) .stream-key-setting {
   min-width: 0;
   border: 1px solid rgba(32, 51, 59, 0.55);
   background: rgba(8, 116, 109, 0.05);
+}
+
+.sector.drag-target {
+  outline: 2px solid rgba(47, 123, 87, 0.9);
+  outline-offset: -3px;
+  background: rgba(47, 123, 87, 0.18);
 }
 
 .sector-label {

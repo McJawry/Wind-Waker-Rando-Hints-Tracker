@@ -46,6 +46,13 @@
             <span>Hint arrow position</span>
             <input id="hintArrowPositionInput" type="range" min="28" max="72" value="50">
           </label>
+          <div class="setting-control rando-folder-setting">
+            <span>Link Rando Folder</span>
+            <button id="browseRandoFolderButton" class="tool-button mini-button" type="button">Browse</button>
+            <button id="syncRandoConfigButton" class="tool-button mini-button" type="button" disabled>Sync</button>
+            <input id="randoFolderInput" type="file" webkitdirectory multiple hidden>
+            <span id="randoFolderStatus" class="setting-status">Choose folder with randomizer .exe</span>
+          </div>
           <label class="setting-toggle">
             <input id="showHoHoInput" type="checkbox" checked>
             <span>Show Old Man Ho Ho</span>
@@ -60,16 +67,26 @@
 
         <div class="map-wrap">
           <div class="map-resize-help">Drag map edge to resize</div>
-          <div id="mapResizeFrame" class="map-resize-frame">
-            <div id="seaGrid" class="sea-grid" aria-label="7 by 7 sea chart"></div>
-            <div class="map-resize-handle top" data-resize-edge="top"></div>
-            <div class="map-resize-handle right" data-resize-edge="right"></div>
-            <div class="map-resize-handle bottom" data-resize-edge="bottom"></div>
-            <div class="map-resize-handle left" data-resize-edge="left"></div>
-            <div class="map-resize-handle corner top-left" data-resize-edge="top-left"></div>
-            <div class="map-resize-handle corner top-right" data-resize-edge="top-right"></div>
-            <div class="map-resize-handle corner bottom-right" data-resize-edge="bottom-right"></div>
-            <div class="map-resize-handle corner bottom-left" data-resize-edge="bottom-left"></div>
+          <div class="map-main-row">
+            <div id="mapResizeFrame" class="map-resize-frame">
+              <div id="seaGrid" class="sea-grid" aria-label="7 by 7 sea chart"></div>
+              <div class="map-resize-handle top" data-resize-edge="top"></div>
+              <div class="map-resize-handle right" data-resize-edge="right"></div>
+              <div class="map-resize-handle bottom" data-resize-edge="bottom"></div>
+              <div class="map-resize-handle left" data-resize-edge="left"></div>
+              <div class="map-resize-handle corner top-left" data-resize-edge="top-left"></div>
+              <div class="map-resize-handle corner top-right" data-resize-edge="top-right"></div>
+              <div class="map-resize-handle corner bottom-right" data-resize-edge="bottom-right"></div>
+              <div class="map-resize-handle corner bottom-left" data-resize-edge="bottom-left"></div>
+            </div>
+            <aside id="mapSideTab" class="map-side-tab" aria-label="Jelly and Triforce shard tracker">
+              <div class="jelly-counter">
+                <img src="assets/images/items/Blue%20Chu%20Jelly.png" alt="">
+                <span>x</span>
+                <strong id="blueChuCount">0</strong>
+              </div>
+              <div id="shardStatusList" class="shard-status-list"></div>
+            </aside>
           </div>
           <div id="areaStrip" class="area-strip" aria-label="Off-map and dungeon areas"></div>
         </div>

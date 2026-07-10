@@ -2,13 +2,13 @@
   "pageBackground": "#f4f1e8",
   "streamKey": "#00ff00",
   "showHoHo": true,
-  "showBlueChu": true,
-  "streamMode": false,
+  "showBlueChu": false,
+  "streamMode": true,
   "compactMode": false,
   "chromeHidden": false,
-  "mapSize": 450,
+  "mapSize": 428,
   "mapIconSize": 145,
-  "hintPanelWidth": 269,
+  "hintPanelWidth": 331,
   "hintArrowPosition": 49,
   "startingGearShards": []
 }

@@ -2,7 +2,7 @@ const STORAGE_KEY = "ww-rando-hint-tracker";
 const CHECKED_KEY = "ww-rando-hint-tracker-checked";
 const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",
@@ -120,6 +120,7 @@ const ITEM_IMAGE_ALIASES = {};
 const ITEM_NAME_ALIASES = {
   "Cmd": "Command Melody",
   "Cheese": "Triforce Shard",
+  "Triforce Shard": "Triforce Shard",
   "Cheese 1": "Triforce Shard 1",
   "Cheese 2": "Triforce Shard 2",
   "Cheese 3": "Triforce Shard 3",
@@ -129,7 +130,8 @@ const ITEM_NAME_ALIASES = {
   "Cheese 7": "Triforce Shard 7",
   "Cheese 8": "Triforce Shard 8",
   "Bombs": "Bomb",
-  "Grapple": "Grappling Hook"
+  "Grapple": "Grappling Hook",
+  "Hook": "Hookshot"
 };
 
 const DISPLAY_ITEM_ALIASES = {
@@ -139,6 +141,61 @@ const DISPLAY_ITEM_ALIASES = {
 const NUMBERED_ITEM_GROUPS = [
   { baseName: "Treasure Chart", count: 46, aliases: ["Treasure Map"] },
   { baseName: "Triforce Chart", count: 8, aliases: [] }
+];
+const ITEM_PALETTE_ENTRIES = [
+  { kind: "item", itemName: "Telescope", row: 1, column: 1 },
+  { kind: "item", itemName: "Sail", row: 1, column: 2 },
+  { kind: "item", itemName: "Wind Waker", row: 1, column: 3 },
+  { kind: "item", itemName: "Grappling Hook", row: 1, column: 4 },
+  { kind: "item", itemName: "Spoils Bag", row: 1, column: 5 },
+  { kind: "item", itemName: "Boomerang", row: 1, column: 6 },
+  { kind: "item", itemName: "Deku Leaf", row: 1, column: 7 },
+  { kind: "item", itemName: "Progressive Sword", row: 1, column: 8 },
+  { kind: "item", itemName: "Tingle Bottle", row: 2, column: 1 },
+  { kind: "item", itemName: "Progressive Picto Box", row: 2, column: 2 },
+  { kind: "item", itemName: "Iron Boots", row: 2, column: 3 },
+  { kind: "blank", row: 2, column: 4 },
+  { kind: "item", itemName: "Bait Bag", row: 2, column: 5 },
+  { kind: "item", itemName: "Progressive Bow", row: 2, column: 6 },
+  { kind: "item", itemName: "Bomb", row: 2, column: 7 },
+  { kind: "item", itemName: "Progressive Shield", row: 2, column: 8 },
+  { kind: "item", itemName: "Cabana Deed", row: 3, column: 1 },
+  { kind: "item", itemName: "Maggie's Letter", row: 3, column: 2 },
+  { kind: "item", itemName: "Moblin's Letter", row: 3, column: 3 },
+  { kind: "item", itemName: "Note to Mom", row: 3, column: 4 },
+  { kind: "item", itemName: "Delivery Bag", row: 3, column: 5 },
+  { kind: "item", itemName: "Hookshot", row: 3, column: 6 },
+  { kind: "item", itemName: "Skull Hammer", row: 3, column: 7 },
+  { kind: "item", itemName: "Power Bracelets", row: 3, column: 8 },
+  { kind: "item", itemName: "Empty Bottle", row: 4, column: 1 },
+  { kind: "item", itemName: "Wind's Requiem", row: 4, column: 2 },
+  { kind: "item", itemName: "Ballad of Gales", row: 4, column: 3 },
+  { kind: "item", itemName: "Command Melody", row: 4, column: 4 },
+  { kind: "item", itemName: "Earth God's Lyric", row: 4, column: 5 },
+  { kind: "item", itemName: "Wind God's Aria", row: 4, column: 6 },
+  { kind: "item", itemName: "Song of Passing", row: 4, column: 7 },
+  { kind: "item", itemName: "Hero's Charm", row: 4, column: 8 },
+  { kind: "pearl-cluster", row: 5, column: 1 },
+  { kind: "triforce-cluster", itemName: "Triforce Shard", imageName: "Triforce of Courage", row: 5, column: 3 },
+  { kind: "blank", row: 5, column: 5 },
+  { kind: "item", itemName: "Tingle Statue", row: 5, column: 6 },
+  { kind: "item", itemName: "Ghost Ship Chart", row: 5, column: 7 },
+  { kind: "item", itemName: "Hurricane Spin", row: 5, column: 8 },
+  { kind: "item", itemName: "Bomb Bag", row: 6, column: 5 },
+  { kind: "item", itemName: "Quiver", row: 6, column: 6 },
+  { kind: "item", itemName: "Progressive Wallet", row: 6, column: 7 },
+  { kind: "item", itemName: "Progressive Magic Meter", row: 6, column: 8 },
+  { kind: "item", itemName: "Small Key", row: 7, column: 1 },
+  { kind: "item", itemName: "Boss Key", row: 7, column: 2 },
+  { kind: "item", itemName: "Treasure Chart", row: 7, column: 3 },
+  { kind: "item", itemName: "Triforce Chart", row: 7, column: 4 },
+  { kind: "boss", bossName: "Gohma", row: 8, column: 1 },
+  { kind: "boss", bossName: "Kalle Demos", row: 8, column: 2 },
+  { kind: "boss", bossName: "Gohdan", row: 8, column: 3 },
+  { kind: "boss", bossName: "Helmaroc King", row: 8, column: 4 },
+  { kind: "boss", bossName: "Jalhalla", row: 8, column: 5 },
+  { kind: "boss", bossName: "Molgera", row: 8, column: 6 },
+  { kind: "boss", bossName: "Ganondorf", row: 8, column: 7 }
 ];
 
 const REQUIREMENT_ALIASES = {
@@ -165,6 +222,9 @@ const state = {
   history: [],
   historyIndex: -1,
   isApplyingHistory: false,
+  isDraggingHintItem: false,
+  draggedHintItem: "",
+  draggedHintKind: "item",
   data: {
     items: [],
     itemSearchNames: [],
@@ -206,6 +266,7 @@ const blueChuCount = document.querySelector("#blueChuCount");
 const shardStatusList = document.querySelector("#shardStatusList");
 const shardPreview = document.querySelector("#shardPreview");
 const shardPreviewImage = document.querySelector("#shardPreviewImage");
+const itemPalette = document.querySelector("#itemPalette");
 const browseRandoFolderButton = document.querySelector("#browseRandoFolderButton");
 const syncRandoConfigButton = document.querySelector("#syncRandoConfigButton");
 const randoFolderInput = document.querySelector("#randoFolderInput");
@@ -213,6 +274,8 @@ const randoFolderStatus = document.querySelector("#randoFolderStatus");
 const tabs = document.querySelectorAll(".tab");
 let randoFolderHandle = null;
 let randoFolderFiles = null;
+let activeManualHintTarget = null;
+let manualDragGhost = null;
 
 function normalize(value) {
   return String(value || "")
@@ -425,15 +488,31 @@ function findBestLocation(query) {
 
 function getAreaAliasMatch(query) {
   const key = normalize(query);
-  const area = state.data.areaAliases[key];
-  if (!area) return null;
+  const directArea = state.data.areaAliases[key];
+  if (directArea) return buildAreaAliasResult(directArea);
 
+  const parts = key.split(" ").filter(Boolean);
+  if (parts.length > 1 && parts[parts.length - 1] === "sector") {
+    const leadingKey = parts.slice(0, -1).join(" ");
+    const baseArea = state.data.areaAliases[leadingKey];
+    const sectorArea = baseArea ? findKnownArea(`${baseArea} Sector`) : null;
+    if (sectorArea) return buildAreaAliasResult(sectorArea);
+  }
+
+  return null;
+}
+
+function buildAreaAliasResult(area) {
   return {
     name: area,
     score: 140,
     confidence: "exact",
     note: "Abbreviation match"
   };
+}
+
+function findKnownArea(name) {
+  return [...state.data.areas, ...state.data.sectors].find((area) => normalize(area) === normalize(name));
 }
 
 function expandLeadingAreaAlias(query) {
@@ -683,10 +762,14 @@ function renderMapSideTab() {
     });
     button.addEventListener("dragstart", (event) => {
       hideShardPreview();
-      event.dataTransfer.setData("text/plain", `Triforce Shard ${number}`);
+      const itemName = `Triforce Shard ${number}`;
+      startHintItemDrag(itemName);
+      event.dataTransfer.setData("text/plain", itemName);
       event.dataTransfer.setData("application/x-wwr-shard", String(number));
+      event.dataTransfer.setData("application/x-wwr-hint-item", itemName);
       event.dataTransfer.effectAllowed = "copy";
     });
+    button.addEventListener("dragend", finishHintItemDrag);
     button.addEventListener("mouseenter", () => showShardPreview(shardName));
     button.addEventListener("focus", () => showShardPreview(shardName));
     button.addEventListener("mouseleave", hideShardPreview);
@@ -724,6 +807,224 @@ function hideShardPreview() {
   shardPreview.hidden = true;
 }
 
+function renderItemPalette() {
+  itemPalette.innerHTML = "";
+
+  ITEM_PALETTE_ENTRIES.forEach((entry) => {
+    if (entry.kind === "pearl-cluster") {
+      itemPalette.appendChild(createPearlCluster(entry));
+      return;
+    }
+
+    if (entry.kind === "triforce-cluster") {
+      itemPalette.appendChild(createPaletteSlot({ ...entry, kind: "item", large: true }));
+      return;
+    }
+
+    itemPalette.appendChild(createPaletteSlot(entry));
+  });
+}
+
+function createPearlCluster(entry) {
+  const cluster = document.createElement("div");
+  cluster.className = "item-palette-cluster pearl-cluster";
+  positionPaletteEntry(cluster, entry, 2, 2);
+
+  [
+    { itemName: "Nayru's Pearl", className: "pearl-top" },
+    { itemName: "Din's Pearl", className: "pearl-left" },
+    { itemName: "Farore's Pearl", className: "pearl-right" }
+  ].forEach((pearl) => {
+    const slot = createPaletteSlot({ kind: "item", itemName: pearl.itemName, className: pearl.className });
+    cluster.appendChild(slot);
+  });
+
+  return cluster;
+}
+
+function createPaletteSlot(entry) {
+  const slot = document.createElement("button");
+  slot.type = "button";
+  slot.className = `item-palette-slot${entry.large ? " large" : ""}${entry.className ? ` ${entry.className}` : ""}`;
+  if (entry.row && entry.column) positionPaletteEntry(slot, entry, entry.large ? 2 : 1, entry.large ? 2 : 1);
+
+  if (entry.kind === "blank") {
+    slot.classList.add("blank");
+    slot.disabled = true;
+    return slot;
+  }
+
+  const dragName = entry.kind === "boss" ? entry.bossName : entry.itemName;
+  const imageName = entry.imageName || dragName;
+  slot.title = dragName;
+  slot.dataset.dragName = dragName;
+  slot.dataset.dragKind = entry.kind === "boss" ? "path" : "item";
+  slot.addEventListener("pointerdown", (event) => beginPaletteEntryDrag(event, slot.dataset.dragName, slot.dataset.dragKind));
+
+  const image = document.createElement("img");
+  image.src = entry.kind === "boss" ? bossImage(imageName) : itemImage(imageName);
+  image.alt = dragName;
+  image.addEventListener("error", () => {
+    slot.classList.add("missing");
+    slot.disabled = true;
+    slot.title = `${dragName} image missing`;
+  });
+  slot.appendChild(image);
+  return slot;
+}
+
+function positionPaletteEntry(element, entry, columnSpan = 1, rowSpan = 1) {
+  element.style.gridColumn = `${entry.column} / span ${columnSpan}`;
+  element.style.gridRow = `${entry.row} / span ${rowSpan}`;
+}
+
+function showItemPalette() {
+  renderItemPalette();
+  itemPalette.hidden = false;
+  itemPalette.style.left = "0px";
+  itemPalette.style.top = "0px";
+
+  const paletteRect = itemPalette.getBoundingClientRect();
+  const mapRect = seaGrid.getBoundingClientRect();
+  const left = clampNumber(mapRect.left + (mapRect.width - paletteRect.width) / 2, 8, window.innerWidth - paletteRect.width - 8);
+  const top = clampNumber(mapRect.top + (mapRect.height - paletteRect.height) / 2, 8, window.innerHeight - paletteRect.height - 8);
+  itemPalette.style.left = `${left}px`;
+  itemPalette.style.top = `${top}px`;
+}
+
+function hideItemPalette() {
+  itemPalette.hidden = true;
+}
+
+function beginPaletteEntryDrag(event, dragName, dragKind = "item") {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  hideItemPalette();
+  startHintItemDrag(dragName, dragKind);
+  createManualDragGhost(dragName, dragKind);
+  updateManualHintDrag(event);
+
+  const handleMove = (moveEvent) => {
+    if (!(moveEvent.buttons & 1)) {
+      finishManualHintDrag(moveEvent, false);
+      cleanup();
+      return;
+    }
+    updateManualHintDrag(moveEvent);
+  };
+
+  const handleUp = (upEvent) => {
+    finishManualHintDrag(upEvent, true);
+    cleanup();
+  };
+
+  const cleanup = () => {
+    window.removeEventListener("pointermove", handleMove);
+    window.removeEventListener("pointerup", handleUp);
+    window.removeEventListener("pointercancel", handleUp);
+  };
+
+  window.addEventListener("pointermove", handleMove);
+  window.addEventListener("pointerup", handleUp);
+  window.addEventListener("pointercancel", handleUp);
+}
+
+function createManualDragGhost(dragName, dragKind = "item") {
+  removeManualDragGhost();
+  manualDragGhost = document.createElement("div");
+  manualDragGhost.className = "manual-drag-ghost";
+
+  const image = document.createElement("img");
+  image.src = dragKind === "path" ? bossImage(dragName) : itemImage(dragName);
+  image.alt = dragName;
+  manualDragGhost.appendChild(image);
+  document.body.appendChild(manualDragGhost);
+}
+
+function removeManualDragGhost() {
+  manualDragGhost?.remove();
+  manualDragGhost = null;
+}
+
+function updateManualHintDrag(event) {
+  if (manualDragGhost) {
+    manualDragGhost.style.left = `${event.clientX}px`;
+    manualDragGhost.style.top = `${event.clientY}px`;
+  }
+
+  const target = getManualHintDropTarget(event.clientX, event.clientY);
+  setActiveManualHintTarget(target?.element || null);
+}
+
+function finishManualHintDrag(event, shouldDrop) {
+  const target = shouldDrop ? getManualHintDropTarget(event.clientX, event.clientY) : null;
+  if (target?.destination && state.draggedHintItem) {
+    const line = state.draggedHintKind === "path" ? `${target.destination} to ${state.draggedHintItem}` : `${state.draggedHintItem} at ${target.destination}`;
+    appendHintLine(line);
+  }
+
+  setActiveManualHintTarget(null);
+  removeManualDragGhost();
+  finishHintItemDrag();
+}
+
+function getManualHintDropTarget(x, y) {
+  const element = document.elementFromPoint(x, y);
+  const sector = element?.closest?.(".sector");
+  if (sector?.dataset.sector) return { element: sector, destination: sector.dataset.sector };
+
+  const area = element?.closest?.(".area-cell");
+  if (area?.dataset.area) return { element: area, destination: area.dataset.area };
+
+  return null;
+}
+
+function setActiveManualHintTarget(element) {
+  if (activeManualHintTarget === element) return;
+  activeManualHintTarget?.classList.remove("drag-target");
+  activeManualHintTarget = element;
+  activeManualHintTarget?.classList.add("drag-target");
+}
+function handleMapContextMenu(event) {
+  event.preventDefault();
+  if (!itemPalette.hidden) {
+    hideItemPalette();
+    return;
+  }
+
+  showItemPalette();
+}
+
+function startHintItemDrag(itemName = "", dragKind = "item") {
+  state.isDraggingHintItem = true;
+  state.draggedHintItem = itemName;
+  state.draggedHintKind = dragKind;
+  hideShardPreview();
+  renderAreaStrip();
+}
+
+function finishHintItemDrag() {
+  if (!state.isDraggingHintItem) return;
+  state.isDraggingHintItem = false;
+  state.draggedHintItem = "";
+  state.draggedHintKind = "item";
+  setActiveManualHintTarget(null);
+  renderAreaStrip();
+}
+
+function hasDraggedHintItem(dataTransfer) {
+  return dataTransfer.types.includes("application/x-wwr-hint-item") || dataTransfer.types.includes("application/x-wwr-shard");
+}
+
+function getDraggedHintItem(dataTransfer) {
+  const itemName = dataTransfer.getData("application/x-wwr-hint-item");
+  if (itemName) return itemName;
+
+  const shardNumber = Number(dataTransfer.getData("application/x-wwr-shard"));
+  return shardNumber ? `Triforce Shard ${shardNumber}` : "";
+}
+
 function toggleStartingGearShard(number) {
   const startingShards = new Set(state.settings.startingGearShards);
   if (startingShards.has(number)) {
@@ -738,22 +1039,39 @@ function toggleStartingGearShard(number) {
 }
 
 function handleSectorDragOver(event) {
-  if (!event.dataTransfer.types.includes("application/x-wwr-shard")) return;
+  handleHintTargetDragOver(event);
+}
+
+function handleSectorDrop(event, sector) {
+  handleHintTargetDrop(event, sector);
+}
+
+function handleSectorDragLeave(event) {
+  handleHintTargetDragLeave(event);
+}
+
+function handleAreaDrop(event, areaName) {
+  handleHintTargetDrop(event, areaName);
+}
+
+function handleHintTargetDragOver(event) {
+  if (!hasDraggedHintItem(event.dataTransfer)) return;
   event.preventDefault();
   event.dataTransfer.dropEffect = "copy";
   event.currentTarget.classList.add("drag-target");
 }
 
-function handleSectorDrop(event, sector) {
-  const shardNumber = Number(event.dataTransfer.getData("application/x-wwr-shard"));
+function handleHintTargetDrop(event, destinationName) {
+  const itemName = getDraggedHintItem(event.dataTransfer);
   event.currentTarget.classList.remove("drag-target");
-  if (!shardNumber) return;
+  if (!itemName) return;
 
   event.preventDefault();
-  appendHintLine(`Triforce Shard ${shardNumber} at ${sector}`);
+  appendHintLine(`${itemName} at ${destinationName}`);
+  finishHintItemDrag();
 }
 
-function handleSectorDragLeave(event) {
+function handleHintTargetDragLeave(event) {
   event.currentTarget.classList.remove("drag-target");
 }
 
@@ -858,12 +1176,16 @@ function renderAreaStrip() {
 
   TRACKED_AREAS.forEach((area) => {
     const areaHints = getAreaHints(area);
-    if (!areaHints.length) return;
+    if (!areaHints.length && !state.isDraggingHintItem) return;
     renderedAreas += 1;
 
     const cell = document.createElement("div");
-    cell.className = "area-cell";
+    cell.className = `area-cell${areaHints.length ? "" : " empty-drop-area"}`;
     cell.title = area.name;
+    cell.dataset.area = area.name;
+    cell.addEventListener("dragover", handleHintTargetDragOver);
+    cell.addEventListener("dragleave", handleHintTargetDragLeave);
+    cell.addEventListener("drop", (event) => handleAreaDrop(event, area.name));
 
     const areaImage = document.createElement("img");
     areaImage.className = "area-image";
@@ -992,7 +1314,20 @@ function renderHintSide(side, position, hint) {
       wrap.appendChild(image);
     } else if (position === "left") {
       const itemBox = document.createElement("div");
-      itemBox.className = "stream-item-box";
+      itemBox.className = "stream-item-box requirement-cycle-target";
+      itemBox.role = "button";
+      itemBox.tabIndex = 0;
+      itemBox.title = "Click to cycle requiredness";
+      itemBox.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        cycleHintRequirement(hint.lineNumber);
+      });
+      itemBox.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        cycleHintRequirement(hint.lineNumber);
+      });
       itemBox.appendChild(image);
       const itemBadge = getItemNumberBadge(side.name);
       if (itemBadge) {
@@ -1030,6 +1365,29 @@ function labelForType(type) {
   return "Review";
 }
 
+function cycleHintRequirement(lineNumber) {
+  const lines = hintInput.value.split(/\r?\n/);
+  const index = lineNumber - 1;
+  const line = lines[index] || "";
+  const match = line.match(/^(.+?)\s+(at|in|on)\s+(.+)$/i);
+  if (!match) return;
+
+  const parsedItem = parseRequirement(match[1]);
+  const currentKey = parsedItem.requirement?.key || "none";
+  const nextSuffix = {
+    none: "r",
+    required: "p",
+    "possibly-required": "n",
+    "not-required": ""
+  }[currentKey];
+
+  if (nextSuffix === undefined) return;
+
+  const nextItemText = [parsedItem.itemText, nextSuffix].filter(Boolean).join(" ");
+  lines[index] = `${nextItemText} ${match[2]} ${match[3]}`;
+  hintInput.value = lines.join("\n");
+  updateFromInput();
+}
 function toggleChecked(id) {
   state.checked[id] = !state.checked[id];
   if (!state.checked[id]) delete state.checked[id];
@@ -1299,6 +1657,23 @@ function resizeHintInput() {
   hintInput.style.height = `${Math.max(135, hintInput.scrollHeight)}px`;
 }
 
+seaGrid.addEventListener("contextmenu", handleMapContextMenu);
+
+itemPalette.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
+  hideItemPalette();
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (!itemPalette.hidden && !itemPalette.contains(event.target) && !seaGrid.contains(event.target)) hideItemPalette();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") hideItemPalette();
+});
+
+window.addEventListener("resize", hideItemPalette);
+
 hintInput.addEventListener("input", () => {
   saveStatus.textContent = "Saving...";
   updateFromInput();
@@ -1444,14 +1819,16 @@ hintPanelResizeHandle.addEventListener("pointerdown", (event) => {
   const startX = event.clientX;
   const startWidth = hintPanel.getBoundingClientRect().width || state.settings.hintPanelWidth;
   const minWidth = 240;
-  const maxWidth = Math.min(520, window.innerWidth - 24);
+  const maxWidth = Math.min(640, window.innerWidth - 24);
+  const isCompactResize = document.body.classList.contains("compact-mode");
 
   hintPanel.classList.add("resizing");
   hintPanelResizeHandle.setPointerCapture(event.pointerId);
 
   const handleMove = (moveEvent) => {
     if (!(moveEvent.buttons & 1)) return;
-    const nextWidth = clampNumber(startWidth + startX - moveEvent.clientX, minWidth, maxWidth);
+    const delta = isCompactResize ? moveEvent.clientX - startX : startX - moveEvent.clientX;
+    const nextWidth = clampNumber(startWidth + delta, minWidth, maxWidth);
     state.settings.hintPanelWidth = Math.round(nextWidth);
     document.documentElement.style.setProperty("--hint-panel-width", `${state.settings.hintPanelWidth}px`);
   };

@@ -2,7 +2,7 @@ const STORAGE_KEY = "ww-rando-hint-tracker";
 const CHECKED_KEY = "ww-rando-hint-tracker-checked";
 const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",
@@ -256,6 +256,7 @@ const showHoHoInput = document.querySelector("#showHoHoInput");
 const showBlueChuInput = document.querySelector("#showBlueChuInput");
 const streamModeInput = document.querySelector("#streamModeInput");
 const compactModeInput = document.querySelector("#compactModeInput");
+const parsedHintsFiltersInput = document.querySelector("#parsedHintsFiltersInput");
 const mapIconSizeInput = document.querySelector("#mapIconSizeInput");
 const hintArrowPositionInput = document.querySelector("#hintArrowPositionInput");
 const mapResizeFrame = document.querySelector("#mapResizeFrame");
@@ -553,12 +554,16 @@ function parseHints(text) {
     .filter(Boolean);
 }
 
+function isNoteToMomItemHint(line) {
+  return /^note\s+to\s+mom\b/i.test(line) && /\s(?:at|in|on)\s/i.test(line);
+}
+
 function parseLine(rawLine, lineNumber) {
   const line = rawLine.trim();
   if (!line) return null;
 
   const pathParts = line.match(/^(.+?)\s+to\s+(.+)$/i);
-  if (pathParts) {
+  if (pathParts && !isNoteToMomItemHint(line)) {
     const area = findBestArea(pathParts[1]);
     const boss = findBest(pathParts[2], state.data.bosses);
     return buildHint("path", line, lineNumber, area, boss, null);
@@ -1471,10 +1476,12 @@ function applySettings() {
   showBlueChuInput.checked = state.settings.showBlueChu;
   streamModeInput.checked = state.settings.streamMode;
   compactModeInput.checked = state.settings.compactMode;
+  parsedHintsFiltersInput.checked = state.settings.parsedHintsFilters;
   mapIconSizeInput.value = state.settings.mapIconSize;
   hintArrowPositionInput.value = state.settings.hintArrowPosition;
   document.body.classList.toggle("stream-mode", state.settings.streamMode);
   document.body.classList.toggle("compact-mode", state.settings.compactMode);
+  document.body.classList.toggle("hide-parsed-filters", !state.settings.parsedHintsFilters);
   document.body.classList.toggle("chrome-hidden", state.settings.chromeHidden);
   renderGrid();
 }
@@ -1712,6 +1719,11 @@ streamModeInput.addEventListener("change", () => {
   applySettings();
 });
 
+parsedHintsFiltersInput.addEventListener("change", () => {
+  state.settings.parsedHintsFilters = parsedHintsFiltersInput.checked;
+  saveSettings();
+  applySettings();
+});
 compactModeInput.addEventListener("change", () => {
   state.settings.compactMode = compactModeInput.checked;
   saveSettings();

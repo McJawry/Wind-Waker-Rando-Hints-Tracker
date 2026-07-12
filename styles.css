@@ -79,6 +79,7 @@ textarea {
   display: grid;
   grid-template-columns: max-content;
   align-items: start;
+  align-content: start;
   justify-content: start;
   gap: 18px;
   min-height: 100vh;
@@ -89,6 +90,7 @@ textarea {
 body.compact-mode .app-shell {
   grid-template-columns: minmax(0, 1fr);
   width: min(100%, var(--hint-panel-width));
+  gap: 10px;
   padding: 12px;
   overflow-x: hidden;
 }
@@ -107,9 +109,34 @@ body.compact-mode .app-shell {
 }
 
 body.compact-mode .tracker-panel {
-  gap: 10px;
+  display: contents;
+}
+body.compact-mode .top-bar,
+body.compact-mode .settings-section,
+body.compact-mode .show-chrome-button,
+body.compact-mode .hint-panel,
+body.compact-mode .notes-section {
   width: 100%;
-  min-width: 0;
+}
+
+body.compact-mode .top-bar {
+  order: 1;
+}
+
+body.compact-mode .settings-section {
+  order: 2;
+}
+
+body.compact-mode .show-chrome-button {
+  order: 3;
+}
+
+body.compact-mode .hint-panel {
+  order: 4;
+}
+
+body.compact-mode .notes-section {
+  order: 5;
 }
 
 body.compact-mode .top-bar p,
@@ -956,6 +983,16 @@ body:not(.stream-mode) .stream-key-setting {
 
 .parsed-section {
   grid-template-rows: auto auto auto;
+}
+
+body.hide-parsed-filters .parsed-section > .section-heading,
+body.hide-parsed-filters .parsed-section > .tabs {
+  display: none;
+}
+
+body.hide-parsed-filters .parsed-section .hint-list {
+  margin-top: -2px;
+  padding-top: 0;
 }
 
 .parsed-section .hint-list {

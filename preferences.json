@@ -6,9 +6,10 @@
   "streamMode": true,
   "compactMode": false,
   "chromeHidden": false,
-  "mapSize": 428,
+  "mapSize": 430,
   "mapIconSize": 145,
-  "hintPanelWidth": 331,
+  "hintPanelWidth": 327,
   "hintArrowPosition": 49,
-  "startingGearShards": []
+  "startingGearShards": [],
+  "parsedHintsFilters": true
 }

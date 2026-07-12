@@ -98,14 +98,18 @@ This section dynamically updates with a visualized list of the hint notes
 * Location hints
 	* Icon of item -> Location
 
-Each hint has a tag for what type of hint it is if "requiredness" is not specified.
-Left click on a item icon to cycle through requiredness.
-Right click on a hint to remove it.
+* Each hint has a tag for what type of hint it is if "requiredness" is not specified.
+* Left click on a item icon to cycle through requiredness.
+* Right click on a hint to remove it.
+* Drag the edge of the parsed hints to change its width.
 
 ## Map
 
 Hinted items will be displayed on an area. If an item is hinted by a location hint, it will only display on the area, so you can't tell from the map alone which location its hinted at.
+
 Non-sector areas are displayed right below the map. Those areas are only displayed if they have items hinted on them.
+
+Drag the edge of the map to resize the whole left panel.
 
 ### Input hints without typing
 

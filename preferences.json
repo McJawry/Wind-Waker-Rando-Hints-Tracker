@@ -3,7 +3,7 @@
   "streamKey": "#00ff00",
   "showHoHo": true,
   "showBlueChu": false,
-  "streamMode": true,
+  "streamMode": false,
   "compactMode": false,
   "chromeHidden": false,
   "mapSize": 430,

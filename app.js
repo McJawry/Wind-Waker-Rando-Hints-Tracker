@@ -523,6 +523,7 @@ let sphereAnalysisWorker = null;
 let sphereAnalysisJobId = 0;
 let sphereAnalysisPendingKey = "";
 let sphereAnalysisPendingPlacements = [];
+let sphereAnalysisWorkerBusy = false;
 let sphereAreaGroupOpenState = new Map();
 let sphereAreaGroupsDefaultOpen = true;
 
@@ -3018,18 +3019,31 @@ function getSphereAnalysisWorker() {
 
   const worker = new Worker(new URL("sphere-worker.js", document.baseURI));
   worker.addEventListener("message", (event) => {
+    sphereAnalysisWorkerBusy = false;
     const jobId = event.data?.jobId;
-    if (jobId !== sphereAnalysisJobId) return;
-    if (event.data.error) {
-      finishSphereDependencyAnalysis(sphereAnalysisPendingKey, calculateSphereProgression(sphereAnalysisPendingPlacements));
-      return;
+    if (jobId === sphereAnalysisJobId) {
+      if (event.data.error) {
+        finishSphereDependencyAnalysis(sphereAnalysisPendingKey, calculateSphereProgression(sphereAnalysisPendingPlacements));
+      } else {
+        finishSphereDependencyAnalysis(sphereAnalysisPendingKey, event.data.calculation);
+      }
+    } else {
+      // A newer placement change arrived while this job was running in the worker.
+      // It was deliberately withheld instead of posted alongside this one (the
+      // worker processes messages one at a time, so posting every change as it
+      // happens queues up a backlog of full calculate() runs whose results all get
+      // thrown away except the last - and since calculate() gets slower as more
+      // placements pile up, that backlog compounds into exactly the "fast, then
+      // suddenly 30 seconds" cliff live automatic-mode play used to hit). Dispatch
+      // the latest desired state now that the worker is free.
+      dispatchSphereAnalysisJob();
     }
-    finishSphereDependencyAnalysis(sphereAnalysisPendingKey, event.data.calculation);
   });
   worker.addEventListener("error", () => {
     // The persistent worker itself broke - drop it so the next request creates a
     // fresh one, and resolve the request that was in flight synchronously so the
     // UI doesn't just hang.
+    sphereAnalysisWorkerBusy = false;
     worker.terminate();
     if (sphereAnalysisWorker === worker) sphereAnalysisWorker = null;
     finishSphereDependencyAnalysis(sphereAnalysisPendingKey, calculateSphereProgression(sphereAnalysisPendingPlacements));
@@ -3038,21 +3052,43 @@ function getSphereAnalysisWorker() {
   return worker;
 }
 
-function queueSphereDependencyAnalysis(key, placements) {
-  const jobId = ++sphereAnalysisJobId;
-  sphereAnalysisPendingKey = key;
-  sphereAnalysisPendingPlacements = placements;
-
+// Always reads the current sphereAnalysisPendingKey/Placements/JobId - not
+// snapshotted arguments - so that when this fires after a busy worker frees up, it
+// sends whatever is actually latest rather than whatever was queued first.
+function dispatchSphereAnalysisJob() {
+  const jobId = sphereAnalysisJobId;
+  const key = sphereAnalysisPendingKey;
+  const placements = sphereAnalysisPendingPlacements;
   const worker = getSphereAnalysisWorker();
+
   if (!worker) {
+    sphereAnalysisWorkerBusy = true;
     window.setTimeout(() => {
-      if (jobId !== sphereAnalysisJobId || sphereAnalysisCache.key !== key) return;
-      finishSphereDependencyAnalysis(key, calculateSphereProgression(placements));
+      sphereAnalysisWorkerBusy = false;
+      if (jobId === sphereAnalysisJobId) {
+        finishSphereDependencyAnalysis(key, calculateSphereProgression(placements));
+      } else {
+        dispatchSphereAnalysisJob();
+      }
     }, 0);
     return;
   }
 
+  sphereAnalysisWorkerBusy = true;
   worker.postMessage({ jobId, input: getSphereCalculationInput(placements) });
+}
+
+function queueSphereDependencyAnalysis(key, placements) {
+  sphereAnalysisJobId += 1;
+  sphereAnalysisPendingKey = key;
+  sphereAnalysisPendingPlacements = placements;
+  // If a job is already running (in the worker, or the no-Worker setTimeout
+  // fallback), don't post another one on top of it - the busy job's own
+  // completion handler will notice sphereAnalysisJobId moved on and dispatch
+  // this latest state itself. This caps in-flight work at one job at a time
+  // instead of letting a burst of rapid changes queue up an ever-growing backlog.
+  if (sphereAnalysisWorkerBusy) return;
+  dispatchSphereAnalysisJob();
 }
 
 function getSphereAnalysisKey(knowledge) {

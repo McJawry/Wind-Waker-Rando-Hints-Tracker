@@ -42,6 +42,14 @@
             <input id="parsedHintsFiltersInput" type="checkbox" checked>
             <span>Parsed hints filters</span>
           </label>
+          <label class="setting-toggle automatic-mode-setting" title="Pair newly acquired tracker items with the next checked location">
+            <input id="automaticModeInput" type="checkbox">
+            <span>Automatic mode</span>
+          </label>
+          <label class="setting-toggle automatic-location-setting" title="Place newly acquired items at the most recently checked location">
+            <input id="automaticLastLocationInput" type="checkbox">
+            <span>Use last checked location</span>
+          </label>
           <label class="setting-control map-icon-size-setting">
             <span>Item icon size</span>
             <input id="mapIconSizeInput" type="range" min="70" max="145" value="100">
@@ -70,7 +78,29 @@
         <button id="showChromeButton" class="tool-button show-chrome-button" type="button">Show title/settings</button>
 
         <div class="map-wrap">
-          <div class="map-resize-help">Drag map edge to resize</div>
+          <div id="automaticModePrompt" class="automatic-mode-prompt" role="status" aria-live="polite" hidden>
+            <img id="automaticModeItemImage" alt="">
+            <div class="automatic-mode-prompt-copy">
+              <strong id="automaticModeItemName"></strong>
+              <span id="automaticModeMessage">Click its location in the main tracker.</span>
+              <div id="automaticModeLocationChoices" class="automatic-mode-location-choices" hidden></div>
+            </div>
+            <button id="automaticModeSkipButton" class="tool-button mini-button" type="button">Skip</button>
+          </div>
+          <div class="map-toolbar">
+            <div class="segmented-control" aria-label="Main tracker view">
+              <button id="mapViewButton" class="active" type="button">Map</button>
+              <button id="sphereViewButton" type="button">Spheres</button>
+            </div>
+            <div class="segmented-control assignment-mode" aria-label="Item assignment type">
+              <button id="hintAssignmentButton" class="active" type="button">Hint</button>
+              <button id="sphereAssignmentButton" type="button">Sphere</button>
+            </div>
+            <button id="startingItemsButton" class="tool-button map-toolbar-button" type="button" disabled>Starting Items</button>
+            <button id="spherePopoutButton" class="tool-button map-toolbar-button" type="button">Pop Out Spheres</button>
+            <span id="sphereLogicStatus" class="sphere-logic-status">Sync for sphere logic</span>
+          </div>
+          <div id="mapResizeHelp" class="map-resize-help">Drag map edge to resize</div>
           <div class="map-main-row">
             <div id="shardPreview" class="shard-preview" hidden>
               <img id="shardPreviewImage" alt="">
@@ -78,6 +108,13 @@
             <div id="itemPalette" class="item-palette" aria-label="Item hint palette" hidden></div>
             <div id="mapResizeFrame" class="map-resize-frame">
               <div id="seaGrid" class="sea-grid" aria-label="7 by 7 sea chart"></div>
+              <section id="sphereBoard" class="sphere-board" aria-label="Sphere progression graph" hidden>
+                <div id="sphereBoardEmpty" class="sphere-board-empty">Sync the randomizer folder, then assign an item to an exact location in Sphere mode.</div>
+                <div id="sphereCanvas" class="sphere-canvas">
+                  <svg id="sphereEdges" class="sphere-edges" aria-hidden="true"></svg>
+                  <div id="sphereColumns" class="sphere-columns"></div>
+                </div>
+              </section>
               <div class="map-resize-handle top" data-resize-edge="top"></div>
               <div class="map-resize-handle right" data-resize-edge="right"></div>
               <div class="map-resize-handle bottom" data-resize-edge="bottom"></div>
@@ -94,6 +131,7 @@
                 <strong id="blueChuCount">0</strong>
               </div>
               <div id="shardStatusList" class="shard-status-list"></div>
+              <div id="dungeonEntranceList" class="dungeon-entrance-list" aria-label="Dungeon entrance mappings"></div>
             </aside>
           </div>
           <div id="areaStrip" class="area-strip" aria-label="Off-map and dungeon areas"></div>
@@ -101,14 +139,26 @@
 
         <section class="notes-section">
           <div class="section-heading">
-            <h2>Hint Notes</h2>
+            <div class="segmented-control notes-tabs" role="tablist" aria-label="Notes type">
+              <button id="hintNotesTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="hintInput">Hint Notes</button>
+              <button id="sphereNotesTab" type="button" role="tab" aria-selected="false" aria-controls="sphereInput">Sphere Tracking</button>
+            </div>
             <span id="saveStatus">Saved locally</span>
           </div>
           <textarea
             id="hintInput"
+            class="notes-input"
             spellcheck="false"
             aria-label="Hint notes"
             placeholder="Type hints here, one per line.&#10;&#10;Examples:&#10;dragon roost to gohma&#10;hookshot at needle rock&#10;progressive sword in dragon roost cavern boss"
+          ></textarea>
+          <textarea
+            id="sphereInput"
+            class="notes-input"
+            spellcheck="false"
+            aria-label="Sphere tracking notes"
+            placeholder="Bottle at Mother &amp; Child Isles - Inside Mother Isle&#10;Deku Leaf at Forbidden Woods - Kalle Demos Heart Container"
+            hidden
           ></textarea>
         </section>
       </section>
@@ -136,6 +186,26 @@
       </aside>
     </main>
 
+    <div id="startingItemsPrompt" class="starting-items-prompt" role="dialog" aria-modal="true" aria-labelledby="startingItemsTitle" hidden>
+      <section class="starting-items-dialog">
+        <div class="starting-items-heading">
+          <div>
+            <h2 id="startingItemsTitle">Random Starting Items</h2>
+            <p id="startingItemsMessage">Select the items this seed gave you.</p>
+          </div>
+          <strong id="startingItemsSelectionCount">0 / 0 selected</strong>
+        </div>
+        <div id="startingItemsPalette" class="item-palette starting-items-palette" aria-label="Select random starting items"></div>
+        <div class="starting-items-actions">
+          <span>Click an item to select or deselect.</span>
+          <button id="startingItemsClearButton" class="tool-button" type="button">Clear</button>
+          <button id="startingItemsCancelButton" class="tool-button" type="button">Cancel</button>
+          <button id="startingItemsApplyButton" class="tool-button primary" type="button">Apply</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="sphere-engine.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

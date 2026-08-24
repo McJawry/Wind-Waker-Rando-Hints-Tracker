@@ -83,7 +83,8 @@ port_offset = folder_port(ROOT) - BASE_PORT
 for attempt in range(1000):
     port = BASE_PORT + ((port_offset + attempt) % 1000)
     try:
-        server = socketserver.TCPServer(("localhost", port), Handler)
+        server = socketserver.ThreadingTCPServer(("localhost", port), Handler)
+        server.daemon_threads = True
         break
     except OSError:
         server = None

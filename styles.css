@@ -321,6 +321,73 @@ body:not(.stream-mode) .stream-key-setting {
   white-space: nowrap;
 }
 
+.automatic-mode-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: min(100%, calc(var(--map-size) + var(--map-side-tab-width) + 5px));
+  min-height: 42px;
+  padding: 5px 7px;
+  border: 1px solid #5d8596;
+  border-radius: 6px;
+  background: #e9f4f7;
+  color: #203943;
+}
+
+.automatic-mode-prompt[hidden] {
+  display: none;
+}
+
+.automatic-mode-prompt > img {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.42));
+}
+
+.automatic-mode-prompt-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+
+.automatic-mode-prompt-copy strong {
+  color: #14262d;
+}
+
+.automatic-mode-location-choices {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.automatic-mode-location-choices[hidden] {
+  display: none;
+}
+
+.automatic-mode-location-choices button {
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 6px;
+  overflow: hidden;
+  border: 1px solid #8ba9b4;
+  border-radius: 4px;
+  background: #fff;
+  color: #203943;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
 .map-wrap {
   display: grid;
   align-items: center;
@@ -455,6 +522,103 @@ body:not(.stream-mode) .stream-key-setting {
 }
 
 
+
+.location-drop-list {
+  position: fixed;
+  z-index: 55;
+  display: grid;
+  gap: 2px;
+  width: min(var(--location-list-width), calc(var(--map-size) - 20px));
+  max-height: min(420px, calc(var(--map-size) - 20px));
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+  background: rgba(16, 24, 30, 0.88);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.location-drop-title {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 24px;
+  padding: 3px 28px 5px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.location-drop-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.location-drop-close:hover,
+.location-drop-close:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  outline: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.location-drop-columns {
+  display: grid;
+  grid-template-columns: repeat(var(--location-column-count), minmax(0, 1fr));
+  gap: 4px;
+  align-items: start;
+}
+
+.location-drop-column {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+}
+
+.location-drop-option {
+  min-height: 27px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #172027;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.location-drop-option.drag-target,
+.location-drop-option:hover {
+  background: #d9f0e2;
+  outline: 2px solid rgba(47, 123, 87, 0.9);
+}
+
+.location-drop-option.rando-marked {
+  background: rgba(190, 96, 116, 0.92);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.location-drop-option.rando-marked.drag-target,
+.location-drop-option.rando-marked:hover {
+  background: rgba(207, 111, 130, 0.96);
+  outline: 2px solid rgba(111, 205, 150, 0.92);
+}
 .manual-drag-ghost {
   position: fixed;
   z-index: 60;
@@ -556,6 +720,14 @@ body:not(.stream-mode) .stream-key-setting {
   background: rgba(55, 190, 95, 0.55);
   mix-blend-mode: color;
   pointer-events: none;
+}
+
+.shard-status-list.automatic-shard-choice .shard-status {
+  border-radius: 3px;
+  outline: 2px solid rgba(139, 82, 190, 0.82);
+  outline-offset: 1px;
+  background: rgba(218, 195, 239, 0.7);
+  opacity: 1;
 }
 
 .shard-status .item-number {
@@ -716,6 +888,17 @@ body:not(.stream-mode) .stream-key-setting {
     linear-gradient(rgba(8, 116, 109, 0.28), rgba(8, 116, 109, 0.28)),
     url("assets/images/Great_Sea_Chart.jpg") center / cover,
     var(--sea);
+}
+
+body.sphere-assignment-mode .sea-grid {
+  background:
+    linear-gradient(rgba(55, 32, 205, 0.52), rgba(55, 32, 205, 0.52)),
+    url("assets/images/Great_Sea_Chart.jpg") center / cover,
+    #3720cd;
+}
+
+body.sphere-assignment-mode .sector {
+  background: rgba(55, 32, 205, 0.05);
 }
 
 .sector {
@@ -979,6 +1162,16 @@ body:not(.stream-mode) .stream-key-setting {
 
 .notes-section {
   grid-template-rows: auto auto;
+}
+
+.segmented-control.notes-tabs button {
+  min-height: 28px;
+  padding-inline: 10px;
+  font-size: 0.76rem;
+}
+
+.notes-input[hidden] {
+  display: none;
 }
 
 .parsed-section {
@@ -1452,3 +1645,857 @@ body.stream-mode .empty-state {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Sphere tracking and randomized dungeon entrance controls */
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: min(100%, calc(var(--map-size) + var(--map-side-tab-width) + 5px));
+  min-width: 0;
+}
+
+.segmented-control {
+  display: inline-grid;
+  grid-auto-flow: column;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.segmented-control button {
+  min-height: 24px;
+  padding: 2px 7px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.69rem;
+  font-weight: 800;
+}
+
+.segmented-control button:last-child {
+  border-right: 0;
+}
+
+.segmented-control button.active {
+  background: var(--sea-dark);
+  color: #fff;
+}
+
+.assignment-mode button.active {
+  background: var(--ok);
+}
+
+.map-toolbar-button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+
+.sphere-logic-status {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-side-tab {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  height: auto;
+  min-height: var(--map-size);
+  overflow: visible;
+}
+
+.shard-status-list {
+  align-self: start;
+  grid-template-rows: none;
+  min-height: initial;
+  gap: 3px;
+}
+
+.shard-status {
+  width: 25px;
+  height: 25px;
+  font-size: 25px;
+}
+
+.dungeon-entrance-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  width: 100%;
+  padding-top: 4px;
+  border-top: 1px solid rgba(32, 51, 59, 0.23);
+}
+
+.dungeon-entrance {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 21px;
+  padding: 0 1px;
+  border: 1px solid rgba(32, 51, 59, 0.3);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.66);
+  color: #36444b;
+  cursor: grab;
+  font-size: 0.51rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.dungeon-entrance:active {
+  cursor: grabbing;
+}
+
+.dungeon-entrance.mapped {
+  border-color: var(--ok);
+  background: #d9f0e2;
+  color: #216841;
+}
+
+.sector-entrance-icons {
+  position: absolute;
+  z-index: 3;
+  top: 21%;
+  right: 3%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  max-width: 46%;
+}
+
+.sector-entrance-badge {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 1px 3px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 3px;
+  background: rgba(22, 41, 49, 0.84);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.sphere-board {
+  position: relative;
+  width: min(100%, var(--map-size));
+  max-width: var(--map-size);
+  aspect-ratio: 1;
+  overflow: auto;
+  border: 2px solid #20333b;
+  background:
+    linear-gradient(rgba(28, 48, 57, 0.91), rgba(28, 48, 57, 0.91)),
+    url("assets/images/Great_Sea_Chart.jpg") center / cover;
+  color: #fff;
+  scrollbar-color: #70818a #24343c;
+  scrollbar-width: thin;
+  cursor: grab;
+  user-select: none;
+}
+
+.sphere-board.sphere-panning,
+.sphere-board.sphere-panning * {
+  cursor: grabbing !important;
+}
+
+.sphere-board[hidden],
+.sphere-canvas[hidden],
+.sea-grid[hidden] {
+  display: none;
+}
+
+.sphere-board-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.sphere-board-empty[hidden] {
+  display: none;
+}
+
+.sphere-canvas {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+  width: max-content;
+  padding: 10px;
+}
+
+.sphere-columns {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  gap: 34px;
+  width: max-content;
+  min-width: 100%;
+  min-height: calc(var(--map-size) - 24px);
+}
+
+.sphere-column {
+  display: flex;
+  flex: 0 0 150px;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  background: rgba(8, 17, 22, 0.42);
+}
+
+.sphere-column.start-column {
+  flex-basis: 92px;
+}
+
+.sphere-column h3 {
+  margin: 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.19);
+  color: #fff;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.sphere-start-node {
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.62rem;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.sphere-groups-toggle {
+  width: 100%;
+  min-height: 25px;
+  padding: 4px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sphere-groups-toggle:hover,
+.sphere-groups-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.sphere-placement-list,
+.sphere-area-groups {
+  display: grid;
+  gap: 5px;
+}
+
+.sphere-placement {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 42px;
+  padding: 3px 5px 3px 3px;
+  border: 1px solid rgba(115, 203, 153, 0.72);
+  border-radius: 4px;
+  background: rgba(231, 246, 237, 0.94);
+  color: #172027;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sphere-placement:hover {
+  outline: 2px solid rgba(255, 222, 104, 0.82);
+}
+
+.sphere-item-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 34px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.42));
+}
+
+.sphere-item-icon img {
+  grid-area: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.sphere-item-icon .item-number {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  min-width: 1.25em;
+  height: 1em;
+  margin: -0.12em 0 0 -0.12em;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #101418;
+  font-size: 54%;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.sphere-item-icon .shard-number {
+  align-self: center;
+  justify-self: end;
+  margin: 0;
+  transform: translateX(55%);
+}
+
+.sphere-placement-label {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 1px 0;
+  overflow: hidden;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.sphere-placement-area {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 0.53rem;
+  font-weight: 800;
+  line-height: 1.05;
+  opacity: 0.86;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sphere-placement-location {
+  margin-top: auto;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.sphere-placement.unknown-sphere-placement {
+  border-style: dashed;
+  background: rgba(240, 243, 244, 0.92);
+}
+
+.sphere-placement.out-of-logic-placement {
+  border-color: rgba(196, 68, 61, 0.92);
+  background: rgba(246, 205, 201, 0.96);
+  color: #421815;
+}
+
+.sphere-placement.optional-placement {
+  border-color: rgba(131, 139, 143, 0.78);
+  background: rgba(225, 228, 229, 0.9);
+  color: #3d464b;
+  box-shadow: inset 3px 0 0 rgba(112, 120, 124, 0.68);
+}
+
+.sphere-placement.optional-placement .sphere-item-icon {
+  filter: grayscale(0.72) opacity(0.72) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.32));
+}
+
+.sphere-optional-label {
+  grid-column: 2;
+  margin-top: -3px;
+  color: #687277;
+  font-size: 0.49rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sphere-placement.path-chain-location:not(.suppress-path-tint),
+.sphere-hint-prediction.path-chain-location:not(.suppress-path-tint) {
+  border-color: rgba(143, 82, 199, 0.92);
+  background: rgba(226, 207, 244, 0.96);
+  color: #34203f;
+  box-shadow: inset 3px 0 0 rgba(117, 61, 169, 0.86);
+}
+
+.sphere-placement.hint-derived,
+.sphere-hint-prediction.hint-derived {
+  border-color: rgba(52, 163, 91, 0.9);
+  background: rgba(202, 241, 215, 0.96);
+  color: #173d25;
+  box-shadow: inset 3px 0 0 rgba(43, 139, 76, 0.78);
+}
+
+.sphere-column.sphere-prediction-column {
+  flex-basis: 165px;
+  border-style: dashed;
+  border-color: rgba(105, 190, 209, 0.55);
+  background: rgba(13, 32, 39, 0.62);
+}
+
+.sphere-column.sphere-path-column {
+  flex-basis: 185px;
+  border-color: rgba(178, 128, 224, 0.68);
+  background: rgba(38, 20, 50, 0.58);
+}
+
+.sphere-prediction-list {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.sphere-hint-prediction,
+.sphere-path-prediction {
+  width: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sphere-hint-prediction {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-height: 42px;
+  padding: 3px 5px 3px 3px;
+  border: 1px dashed rgba(105, 190, 209, 0.8);
+  background: rgba(229, 246, 250, 0.94);
+  color: #172027;
+}
+
+.sphere-prediction-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sphere-prediction-body strong {
+  font-size: 0.61rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.sphere-prediction-body small,
+.sphere-path-candidates small {
+  color: #596970;
+  font-size: 0.53rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.sphere-path-prediction {
+  display: grid;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(188, 139, 232, 0.82);
+  background: rgba(246, 237, 252, 0.96);
+  color: #25192c;
+}
+
+.sphere-hint-prediction:hover,
+.sphere-path-prediction:hover {
+  outline: 2px solid rgba(255, 222, 104, 0.82);
+}
+
+.sphere-path-header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.sphere-boss-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.38));
+}
+
+.sphere-path-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sphere-path-text strong {
+  font-size: 0.62rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.sphere-path-text small {
+  width: max-content;
+  padding: 2px 4px;
+  border: 1px solid rgba(106, 67, 139, 0.42);
+  border-radius: 3px;
+  background: rgba(106, 67, 139, 0.1);
+  color: #5b386f;
+  font-size: 0.53rem;
+  font-weight: 900;
+}
+
+.sphere-path-candidates {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-height: 28px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(91, 56, 111, 0.18);
+}
+
+.sphere-path-candidate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.38));
+}
+
+.sphere-path-candidate img {
+  grid-area: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.sphere-path-candidate .item-number {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  min-width: 1.2em;
+  height: 1em;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #101418;
+  font-size: 52%;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.sphere-candidate-sphere {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  min-width: 18px;
+  padding: 1px 3px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 3px;
+  background: #50326b;
+  color: #fff;
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  filter: none;
+}
+
+.sphere-available-heading {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.sphere-area-group {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sphere-area-group[open] {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.sphere-area-group summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  list-style-position: inside;
+}
+
+.sphere-area-group summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sphere-area-group summary strong {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.sphere-location-list {
+  display: grid;
+  gap: 1px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 0 4px 4px;
+}
+
+.sphere-location-list div {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.55rem;
+  line-height: 1.25;
+}
+
+.sphere-location-list div > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sphere-area-group summary .sphere-location-path-bosses {
+  overflow: visible;
+}
+
+.sphere-location-path-bosses {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.sphere-location-path-boss {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.52));
+}
+
+.sphere-location-list div.rando-marked {
+  border-color: rgba(255, 190, 204, 0.2);
+  background: rgba(190, 96, 116, 0.46);
+  color: rgba(255, 240, 244, 0.86);
+}
+
+.sphere-edges {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.sphere-edges path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 2;
+  opacity: 0;
+  transition: opacity 120ms ease, stroke 120ms ease, stroke-width 120ms ease;
+}
+
+.sphere-edges path.highlighted {
+  stroke: #ffda54;
+  stroke-width: 3;
+  opacity: 1;
+}
+
+.sphere-edges path.path-hint-edge {
+  stroke: #ad72ee;
+  stroke-width: 2.5;
+  opacity: 0.95;
+}
+
+.sphere-edges path.path-hint-edge.highlighted {
+  stroke: #d4adff;
+  stroke-width: 3.25;
+}
+
+.sphere-canvas [data-node-id] {
+  transition: opacity 120ms ease, filter 120ms ease;
+}
+
+.sphere-canvas.sphere-chain-focus [data-node-id].sphere-chain-dimmed {
+  opacity: 0.22 !important;
+  filter: brightness(0.32) saturate(0.28) !important;
+}
+
+.sphere-canvas.sphere-chain-focus .sphere-edges path.sphere-chain-dimmed {
+  opacity: 0;
+}
+
+.sphere-canvas.sphere-chain-focus .sphere-edges path.path-hint-edge.sphere-chain-dimmed {
+  opacity: 0.95;
+}
+
+body.stream-mode .map-toolbar {
+  background: var(--stream-key);
+}
+
+body.compact-mode .map-toolbar {
+  display: none;
+}
+
+.starting-items-prompt {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 14, 18, 0.72);
+}
+
+.starting-items-prompt[hidden] {
+  display: none;
+}
+
+.starting-items-dialog {
+  width: 400px;
+  max-width: calc(100vw - 24px);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+}
+
+.starting-items-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 9px;
+}
+
+.starting-items-heading p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.starting-items-heading strong {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.starting-items-palette.item-palette {
+  position: relative;
+  z-index: auto;
+  grid-template-rows: repeat(7, 44px);
+  margin: 0 auto;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(16, 24, 30, 0.9);
+  box-shadow: none;
+}
+
+.starting-items-palette .item-palette-slot {
+  cursor: pointer;
+  isolation: isolate;
+}
+
+.starting-items-palette .item-palette-slot.blank,
+.starting-items-palette .item-palette-slot.missing {
+  cursor: default;
+}
+
+.starting-items-palette .item-palette-slot.selected {
+  background: rgba(71, 175, 112, 0.38);
+  box-shadow: inset 0 0 0 2px rgba(145, 235, 180, 0.92);
+}
+
+.starting-item-count {
+  position: absolute;
+  z-index: 3;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 9px;
+  background: #2f7b57;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+  filter: none;
+}
+
+.starting-items-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 9px;
+}
+
+.starting-items-actions > span {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.starting-items-actions .tool-button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 0.7rem;
+}
+
+.starting-items-actions .tool-button.primary {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #fff;
+}
+

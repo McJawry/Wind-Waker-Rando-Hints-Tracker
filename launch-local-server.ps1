@@ -52,56 +52,72 @@ function Write-Response($context, $statusCode, $contentType, $bytes) {
 }
 
 while ($listener.IsListening) {
-  $context = $listener.GetContext()
-  $requestPath = [System.Uri]::UnescapeDataString($context.Request.Url.AbsolutePath.TrimStart("/"))
-  if ([string]::IsNullOrWhiteSpace($requestPath)) {
-    $requestPath = "index.html"
-  }
-
-  if ($requestPath -eq "preferences.json") {
-    $preferencesPath = Join-Path $root "preferences.json"
-
-    if ($context.Request.HttpMethod -eq "GET") {
-      if (Test-Path -LiteralPath $preferencesPath -PathType Leaf) {
-        $bytes = [IO.File]::ReadAllBytes($preferencesPath)
-      } else {
-        $bytes = [Text.Encoding]::UTF8.GetBytes("{}")
-      }
-      Write-Response $context 200 "application/json; charset=utf-8" $bytes
-      continue
-    }
-
-    if ($context.Request.HttpMethod -eq "POST") {
-      $reader = New-Object IO.StreamReader($context.Request.InputStream, $context.Request.ContentEncoding)
-      $body = $reader.ReadToEnd()
-      $reader.Close()
-
-      try {
-        $null = $body | ConvertFrom-Json
-        [IO.File]::WriteAllText($preferencesPath, $body, [Text.Encoding]::UTF8)
-        $bytes = [Text.Encoding]::UTF8.GetBytes("{""ok"":true}")
-        Write-Response $context 200 "application/json; charset=utf-8" $bytes
-      } catch {
-        $bytes = [Text.Encoding]::UTF8.GetBytes("{""ok"":false}")
-        Write-Response $context 400 "application/json; charset=utf-8" $bytes
-      }
-      continue
-    }
-
-    $bytes = [Text.Encoding]::UTF8.GetBytes("Method not allowed")
-    Write-Response $context 405 "text/plain; charset=utf-8" $bytes
+  try {
+    $context = $listener.GetContext()
+  } catch {
+    if ($listener.IsListening) { Write-Host "Error accepting a connection: $_" }
     continue
   }
 
-  $relativePath = $requestPath.Replace("/", [IO.Path]::DirectorySeparatorChar)
-  $fullPath = [IO.Path]::GetFullPath((Join-Path $root $relativePath))
-  $rootPath = [IO.Path]::GetFullPath($root)
+  # $ErrorActionPreference = "Stop" (top of file) makes every error terminating, and
+  # a browser cancelling or dropping a connection mid-response (a normal, frequent
+  # occurrence - page navigation, refresh, a superseded prefetch) throws when this
+  # code tries to write to the now-closed stream. Without a try/catch around request
+  # handling, that one dropped connection used to kill the entire server - and since
+  # the launcher .bat has no `pause`, the window just vanished with no visible error.
+  try {
+    $requestPath = [System.Uri]::UnescapeDataString($context.Request.Url.AbsolutePath.TrimStart("/"))
+    if ([string]::IsNullOrWhiteSpace($requestPath)) {
+      $requestPath = "index.html"
+    }
 
-  if (-not $fullPath.StartsWith($rootPath, [StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
-    $bytes = [Text.Encoding]::UTF8.GetBytes("Not found")
-    Write-Response $context 404 "text/plain; charset=utf-8" $bytes
-  } else {
-    $bytes = [IO.File]::ReadAllBytes($fullPath)
-    Write-Response $context 200 (Get-ContentType $fullPath) $bytes
+    if ($requestPath -eq "preferences.json") {
+      $preferencesPath = Join-Path $root "preferences.json"
+
+      if ($context.Request.HttpMethod -eq "GET") {
+        if (Test-Path -LiteralPath $preferencesPath -PathType Leaf) {
+          $bytes = [IO.File]::ReadAllBytes($preferencesPath)
+        } else {
+          $bytes = [Text.Encoding]::UTF8.GetBytes("{}")
+        }
+        Write-Response $context 200 "application/json; charset=utf-8" $bytes
+        continue
+      }
+
+      if ($context.Request.HttpMethod -eq "POST") {
+        $reader = New-Object IO.StreamReader($context.Request.InputStream, $context.Request.ContentEncoding)
+        $body = $reader.ReadToEnd()
+        $reader.Close()
+
+        try {
+          $null = $body | ConvertFrom-Json
+          [IO.File]::WriteAllText($preferencesPath, $body, [Text.Encoding]::UTF8)
+          $bytes = [Text.Encoding]::UTF8.GetBytes("{""ok"":true}")
+          Write-Response $context 200 "application/json; charset=utf-8" $bytes
+        } catch {
+          $bytes = [Text.Encoding]::UTF8.GetBytes("{""ok"":false}")
+          Write-Response $context 400 "application/json; charset=utf-8" $bytes
+        }
+        continue
+      }
+
+      $bytes = [Text.Encoding]::UTF8.GetBytes("Method not allowed")
+      Write-Response $context 405 "text/plain; charset=utf-8" $bytes
+      continue
+    }
+
+    $relativePath = $requestPath.Replace("/", [IO.Path]::DirectorySeparatorChar)
+    $fullPath = [IO.Path]::GetFullPath((Join-Path $root $relativePath))
+    $rootPath = [IO.Path]::GetFullPath($root)
+
+    if (-not $fullPath.StartsWith($rootPath, [StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+      $bytes = [Text.Encoding]::UTF8.GetBytes("Not found")
+      Write-Response $context 404 "text/plain; charset=utf-8" $bytes
+    } else {
+      $bytes = [IO.File]::ReadAllBytes($fullPath)
+      Write-Response $context 200 (Get-ContentType $fullPath) $bytes
+    }
+  } catch {
+    Write-Host "Request error (connection likely dropped by the browser): $_"
   }
 }

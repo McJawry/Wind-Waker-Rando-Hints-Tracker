@@ -4,7 +4,7 @@ const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const SPHERE_STORAGE_KEY = "ww-rando-hint-tracker-spheres";
 const SPHERE_NOTES_STORAGE_KEY = "ww-rando-hint-tracker-sphere-notes";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.4.0-beta-v5-optimized-v6";
+const APP_VERSION = "1.4.0-beta-v5-optimized-v7";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",
@@ -521,6 +521,8 @@ let sphereHardBossRequirementCache = new Map();
 let sphereRenderTimer = null;
 let sphereAnalysisWorker = null;
 let sphereAnalysisJobId = 0;
+let sphereAnalysisPendingKey = "";
+let sphereAnalysisPendingPlacements = [];
 let sphereAreaGroupOpenState = new Map();
 let sphereAreaGroupsDefaultOpen = true;
 
@@ -2971,9 +2973,17 @@ function getSphereReachabilityWithOwnDungeonKeys(items, options = {}) {
 }
 
 function invalidateSphereAnalysis() {
+  // This runs on every routine placement change (updateSphereFromInput fires it on
+  // every edit, autosave polling fires it on every detected change) - NOT just on a
+  // logic re-sync. The sphere-analysis worker deliberately stays alive across this:
+  // it's a persistent, reused worker (see getSphereAnalysisWorker), and its internal
+  // sphere-engine.js expression/atom caches are exactly what makes calculate() fast.
+  // Killing and recreating the worker here used to force every single edit to pay a
+  // full cold-start re-parse of every location rule and macro from scratch - the
+  // actual cause of updates taking seconds where a warm calculate() call takes
+  // milliseconds. Bumping the job id is enough to make any in-flight response for a
+  // now-stale request get ignored.
   sphereAnalysisJobId += 1;
-  if (sphereAnalysisWorker) sphereAnalysisWorker.terminate();
-  sphereAnalysisWorker = null;
   sphereAnalysisCache = { key: "", calculation: null, relativeUnknown: null, pathProgress: [], dependenciesReady: false };
   sphereReachabilityCache.clear();
   sphereHardBossRequirementCache.clear();
@@ -2994,11 +3004,47 @@ function finishSphereDependencyAnalysis(key, calculation) {
   if (shouldRenderSphereBoard()) renderSphereBoard();
 }
 
+// One worker, reused for the whole page session, instead of a fresh Worker per
+// request. A new Worker means a fresh sphere-engine.js execution context, which
+// throws away its module-level expression/atom caches - recreating it on every
+// edit (the old behavior) forced every single update to pay a full cold-start
+// re-parse of every location rule and macro, which is what made updates take
+// seconds instead of the milliseconds a warm calculate() call actually needs.
+// Callers identify their own request via jobId (sphereAnalysisJobId), so a stale
+// response from a superseded request is safely ignored whether or not the worker
+// itself was recreated in between.
+function getSphereAnalysisWorker() {
+  if (sphereAnalysisWorker || typeof Worker === "undefined") return sphereAnalysisWorker;
+
+  const worker = new Worker(new URL("sphere-worker.js", document.baseURI));
+  worker.addEventListener("message", (event) => {
+    const jobId = event.data?.jobId;
+    if (jobId !== sphereAnalysisJobId) return;
+    if (event.data.error) {
+      finishSphereDependencyAnalysis(sphereAnalysisPendingKey, calculateSphereProgression(sphereAnalysisPendingPlacements));
+      return;
+    }
+    finishSphereDependencyAnalysis(sphereAnalysisPendingKey, event.data.calculation);
+  });
+  worker.addEventListener("error", () => {
+    // The persistent worker itself broke - drop it so the next request creates a
+    // fresh one, and resolve the request that was in flight synchronously so the
+    // UI doesn't just hang.
+    worker.terminate();
+    if (sphereAnalysisWorker === worker) sphereAnalysisWorker = null;
+    finishSphereDependencyAnalysis(sphereAnalysisPendingKey, calculateSphereProgression(sphereAnalysisPendingPlacements));
+  });
+  sphereAnalysisWorker = worker;
+  return worker;
+}
+
 function queueSphereDependencyAnalysis(key, placements) {
   const jobId = ++sphereAnalysisJobId;
-  if (sphereAnalysisWorker) sphereAnalysisWorker.terminate();
+  sphereAnalysisPendingKey = key;
+  sphereAnalysisPendingPlacements = placements;
 
-  if (typeof Worker === "undefined") {
+  const worker = getSphereAnalysisWorker();
+  if (!worker) {
     window.setTimeout(() => {
       if (jobId !== sphereAnalysisJobId || sphereAnalysisCache.key !== key) return;
       finishSphereDependencyAnalysis(key, calculateSphereProgression(placements));
@@ -3006,30 +3052,6 @@ function queueSphereDependencyAnalysis(key, placements) {
     return;
   }
 
-  const worker = new Worker(new URL("sphere-worker.js", document.baseURI));
-  sphereAnalysisWorker = worker;
-  worker.addEventListener("message", (event) => {
-    if (event.data?.jobId !== jobId || jobId !== sphereAnalysisJobId) return;
-    worker.terminate();
-    if (sphereAnalysisWorker === worker) sphereAnalysisWorker = null;
-    if (event.data.error) {
-      window.setTimeout(() => {
-        if (jobId !== sphereAnalysisJobId || sphereAnalysisCache.key !== key) return;
-        finishSphereDependencyAnalysis(key, calculateSphereProgression(placements));
-      }, 0);
-      return;
-    }
-    finishSphereDependencyAnalysis(key, event.data.calculation);
-  });
-  worker.addEventListener("error", () => {
-    if (jobId !== sphereAnalysisJobId) return;
-    worker.terminate();
-    if (sphereAnalysisWorker === worker) sphereAnalysisWorker = null;
-    window.setTimeout(() => {
-      if (jobId !== sphereAnalysisJobId || sphereAnalysisCache.key !== key) return;
-      finishSphereDependencyAnalysis(key, calculateSphereProgression(placements));
-    }, 0);
-  }, { once: true });
   worker.postMessage({ jobId, input: getSphereCalculationInput(placements) });
 }
 
@@ -3152,45 +3174,54 @@ function inferRelativeUnknownSpheres(knowledge, calculation) {
 
   const dependencySources = sources.filter((source) => !source.fromAutosave);
   const requiredItemCache = new Map();
-  dependencySources.forEach((source) => {
-    const itemKey = normalize(source.item);
-    if (!reachableByItem.has(itemKey)) {
-      reachableByItem.set(itemKey, getReachableLocations([...knownItems, source.item]));
-    }
-
-    const reachable = reachableByItem.get(itemKey);
-    availableLocations.forEach((location) => {
-      if (!reachable.has(normalize(location)) && !isLogicRequiredItemForLocation(source, location, requiredItemCache)) return;
-      availableDependencies.get(normalize(location)).push(source.id);
-    });
-    const newlyReachableTargets = unresolvedPlacements.filter((target) => {
-      if (target.id === source.id) return;
-      const locationKey = normalize(target.location);
-      return !baselineReachable.has(locationKey)
-        && (reachable.has(locationKey) || isLogicRequiredItemForLocation(source, target.location, requiredItemCache));
-    });
-    newlyReachableTargets.forEach((target) => {
-      dependencies.get(target.id).push(source.id);
-    });
-    if (!newlyReachableTargets.length) return;
-
-    progressiveProviders.forEach((provider) => {
-      const cacheKey = `${itemKey}:${provider.id}`;
-      if (!reducedReachability.has(cacheKey)) {
-        const reducedItems = [
-          ...getSphereLogicStartingGear(),
-          ...resolvedPlacements.filter((placement) => placement.id !== provider.id).map((placement) => placement.item),
-          source.item
-        ];
-        reducedReachability.set(cacheKey, getReachableLocations(reducedItems));
+  // Every write below only happens through availableLocations.forEach or
+  // newlyReachableTargets (itself filtered from unresolvedPlacements). When both
+  // are empty, the per-source getReachableLocations() calls this loop makes are
+  // pure waste - previously they still ran once per distinct pruned/unresolved
+  // item type on every single sphere update, which is what made large boards with
+  // several pruned filler items slow to update even though nothing was left to
+  // attach a dependency to.
+  if (availableLocations.length || unresolvedPlacements.length) {
+    dependencySources.forEach((source) => {
+      const itemKey = normalize(source.item);
+      if (!reachableByItem.has(itemKey)) {
+        reachableByItem.set(itemKey, getReachableLocations([...knownItems, source.item]));
       }
 
-      const reduced = reducedReachability.get(cacheKey);
+      const reachable = reachableByItem.get(itemKey);
+      availableLocations.forEach((location) => {
+        if (!reachable.has(normalize(location)) && !isLogicRequiredItemForLocation(source, location, requiredItemCache)) return;
+        availableDependencies.get(normalize(location)).push(source.id);
+      });
+      const newlyReachableTargets = unresolvedPlacements.filter((target) => {
+        if (target.id === source.id) return;
+        const locationKey = normalize(target.location);
+        return !baselineReachable.has(locationKey)
+          && (reachable.has(locationKey) || isLogicRequiredItemForLocation(source, target.location, requiredItemCache));
+      });
       newlyReachableTargets.forEach((target) => {
-        if (!reduced.has(normalize(target.location))) dependencies.get(target.id).push(provider.id);
+        dependencies.get(target.id).push(source.id);
+      });
+      if (!newlyReachableTargets.length) return;
+
+      progressiveProviders.forEach((provider) => {
+        const cacheKey = `${itemKey}:${provider.id}`;
+        if (!reducedReachability.has(cacheKey)) {
+          const reducedItems = [
+            ...getSphereLogicStartingGear(),
+            ...resolvedPlacements.filter((placement) => placement.id !== provider.id).map((placement) => placement.item),
+            source.item
+          ];
+          reducedReachability.set(cacheKey, getReachableLocations(reducedItems));
+        }
+
+        const reduced = reducedReachability.get(cacheKey);
+        newlyReachableTargets.forEach((target) => {
+          if (!reduced.has(normalize(target.location))) dependencies.get(target.id).push(provider.id);
+        });
       });
     });
-  });
+  }
 
   // Triforce access is a count gate, so no single unknown shard can reveal the
   // dependency. Test all obtained unknown shards together, then remove them one

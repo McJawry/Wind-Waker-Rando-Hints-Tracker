@@ -4,7 +4,7 @@ const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const SPHERE_STORAGE_KEY = "ww-rando-hint-tracker-spheres";
 const SPHERE_NOTES_STORAGE_KEY = "ww-rando-hint-tracker-sphere-notes";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.4.0-beta-v5-optimized-v8";
+const APP_VERSION = "1.4.0-beta-v5-optimized-v9";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",
@@ -5276,6 +5276,12 @@ function stopRandoAutosavePolling() {
 async function pollRandoTrackerAutosave() {
   if (!randoFolderHandle || randoAutosavePollBusy) return;
   randoAutosavePollBusy = true;
+  // Temporary diagnostic timing - only logs when a tick is actually slow, to find
+  // out which specific await (file stat, file read, or the marked/automatic-mode
+  // processing) is responsible for the multi-second stalls some testers see with
+  // live folder sync. Safe to remove once that's identified.
+  const pollStart = performance.now();
+  let tGetFile = 0, tText = 0, tMarked = 0, tProcess = 0;
   try {
     // getFile() is a cheap metadata-only stat - it does not read file contents.
     // Only read+process the full file when its mtime actually changed, instead of
@@ -5285,14 +5291,18 @@ async function pollRandoTrackerAutosave() {
     // on every tick (Downloads folders in particular are commonly scanned on access),
     // which can make normal interaction feel stalled even though the JS side is fast.
     const file = await getLinkedFile("tracker_autosave.yaml");
+    tGetFile = performance.now();
     if (file.lastModified === randoAutosaveLastModified) return;
     randoAutosaveLastModified = file.lastModified;
     const autosaveText = await file.text();
+    tText = performance.now();
     if (autosaveText === randoAutosaveLastText || !/^\s*(?:marked_locations|connected_entrances)\s*:/im.test(autosaveText)) return;
     const previousAutosaveText = randoAutosaveLastText;
     randoAutosaveLastText = autosaveText;
     const markedLocationCount = applyRandoMarkedLocations(autosaveText);
+    tMarked = performance.now();
     processAutomaticModeAutosave(previousAutosaveText, autosaveText);
+    tProcess = performance.now();
     randoFolderStatus.textContent = `${randoFolderHandle.name} (${markedLocationCount} checked, live)`;
   } catch (error) {
     if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
@@ -5300,6 +5310,16 @@ async function pollRandoTrackerAutosave() {
       randoFolderStatus.textContent = "Folder permission required";
     }
   } finally {
+    const pollEnd = performance.now();
+    if (pollEnd - pollStart > 500) {
+      console.warn(
+        `[sphere-poll] slow tick: getFile=${(tGetFile ? tGetFile - pollStart : pollEnd - pollStart).toFixed(0)}ms `
+        + `text=${(tText ? tText - tGetFile : 0).toFixed(0)}ms `
+        + `marked=${(tMarked ? tMarked - tText : 0).toFixed(0)}ms `
+        + `process=${(tProcess ? tProcess - tMarked : 0).toFixed(0)}ms `
+        + `total=${(pollEnd - pollStart).toFixed(0)}ms`
+      );
+    }
     randoAutosavePollBusy = false;
   }
 }

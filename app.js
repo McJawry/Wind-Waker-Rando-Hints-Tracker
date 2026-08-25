@@ -4,7 +4,7 @@ const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const SPHERE_STORAGE_KEY = "ww-rando-hint-tracker-spheres";
 const SPHERE_NOTES_STORAGE_KEY = "ww-rando-hint-tracker-sphere-notes";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.4.0-beta-v5-optimized-v10";
+const APP_VERSION = "1.4.0-beta-v6";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",

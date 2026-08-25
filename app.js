@@ -4,7 +4,7 @@ const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const SPHERE_STORAGE_KEY = "ww-rando-hint-tracker-spheres";
 const SPHERE_NOTES_STORAGE_KEY = "ww-rando-hint-tracker-sphere-notes";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.4.0-beta-v5-optimized-v9";
+const APP_VERSION = "1.4.0-beta-v5-optimized-v10";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",
@@ -524,6 +524,7 @@ let sphereAnalysisJobId = 0;
 let sphereAnalysisPendingKey = "";
 let sphereAnalysisPendingPlacements = [];
 let sphereAnalysisWorkerBusy = false;
+let sphereAnalysisDispatchStart = 0;
 let sphereAreaGroupOpenState = new Map();
 let sphereAreaGroupsDefaultOpen = true;
 
@@ -3020,12 +3021,23 @@ function getSphereAnalysisWorker() {
   const worker = new Worker(new URL("sphere-worker.js", document.baseURI));
   worker.addEventListener("message", (event) => {
     sphereAnalysisWorkerBusy = false;
+    // Same rationale as the [sphere-poll] timing: only logs when a job is actually
+    // slow, split into the worker's own calculate() time vs. the main-thread
+    // finish step (inferRelativeUnknownSpheres + render), so a stall that isn't
+    // caused by slow file I/O (see pollRandoTrackerAutosave) can still be pinned
+    // down to either the background computation or the render/dependency step.
+    const workerMs = performance.now() - sphereAnalysisDispatchStart;
     const jobId = event.data?.jobId;
     if (jobId === sphereAnalysisJobId) {
+      const finishStart = performance.now();
       if (event.data.error) {
         finishSphereDependencyAnalysis(sphereAnalysisPendingKey, calculateSphereProgression(sphereAnalysisPendingPlacements));
       } else {
         finishSphereDependencyAnalysis(sphereAnalysisPendingKey, event.data.calculation);
+      }
+      const finishMs = performance.now() - finishStart;
+      if (workerMs > 500 || finishMs > 500) {
+        console.warn(`[sphere-analysis] slow job: workerMs=${workerMs.toFixed(0)}ms finishMs=${finishMs.toFixed(0)}ms total=${(workerMs + finishMs).toFixed(0)}ms`);
       }
     } else {
       // A newer placement change arrived while this job was running in the worker.
@@ -3063,10 +3075,13 @@ function dispatchSphereAnalysisJob() {
 
   if (!worker) {
     sphereAnalysisWorkerBusy = true;
+    const fallbackStart = performance.now();
     window.setTimeout(() => {
       sphereAnalysisWorkerBusy = false;
       if (jobId === sphereAnalysisJobId) {
         finishSphereDependencyAnalysis(key, calculateSphereProgression(placements));
+        const totalMs = performance.now() - fallbackStart;
+        if (totalMs > 500) console.warn(`[sphere-analysis] slow job (no-Worker fallback): total=${totalMs.toFixed(0)}ms`);
       } else {
         dispatchSphereAnalysisJob();
       }
@@ -3075,6 +3090,7 @@ function dispatchSphereAnalysisJob() {
   }
 
   sphereAnalysisWorkerBusy = true;
+  sphereAnalysisDispatchStart = performance.now();
   worker.postMessage({ jobId, input: getSphereCalculationInput(placements) });
 }
 

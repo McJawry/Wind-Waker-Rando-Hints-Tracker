@@ -3947,10 +3947,22 @@ function isHardRequiredItemForBoss(placement, bossName) {
 
   const bossDungeon = getAreaFromLocation(bossLocation);
   const dungeonStart = state.data.sphereWorld?.dungeonStarts?.[normalize(bossDungeon)];
-  const reachabilityOptions = dungeonStart ? { additionalStartAreas: [dungeonStart] } : {};
-  const fullReachability = getSphereReachabilityWithOwnDungeonKeys(maximalInventory, reachabilityOptions);
-  const hardRequired = fullReachability.has(normalize(bossLocation))
-    && !getSphereReachabilityWithOwnDungeonKeys(reducedInventory, reachabilityOptions).has(normalize(bossLocation));
+  const isHardRequiredWith = (options) => {
+    const fullReachability = getSphereReachabilityWithOwnDungeonKeys(maximalInventory, options);
+    return fullReachability.has(normalize(bossLocation))
+      && !getSphereReachabilityWithOwnDungeonKeys(reducedInventory, options).has(normalize(bossLocation));
+  };
+  // Seeding from the dungeon's own entrance (additionalStartAreas) isolates whether
+  // the item gates progress *inside* the dungeon, independent of overworld/entrance-
+  // shuffle access. But that seeding also means an item that gates the dungeon's
+  // *entrance itself* - e.g. Bombs needed to blow open the wall into Forsaken
+  // Fortress, never used inside the dungeon or on Helmaroc King - always tests as
+  // "reachable anyway" and is missed. Falling back to the real path from the actual
+  // start catches that case too; only running it when dungeonStart exists avoids a
+  // redundant duplicate test everywhere else.
+  const hardRequired = dungeonStart
+    ? isHardRequiredWith({ additionalStartAreas: [dungeonStart] }) || isHardRequiredWith({})
+    : isHardRequiredWith({});
   sphereHardBossRequirementCache.set(cacheKey, hardRequired);
   return hardRequired;
 }

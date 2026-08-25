@@ -4,7 +4,7 @@ const SETTINGS_KEY = "ww-rando-hint-tracker-settings";
 const SPHERE_STORAGE_KEY = "ww-rando-hint-tracker-spheres";
 const SPHERE_NOTES_STORAGE_KEY = "ww-rando-hint-tracker-sphere-notes";
 const PREFERENCES_FILE = "preferences.json";
-const APP_VERSION = "1.4.0-beta-v6";
+const APP_VERSION = "1.4.0-beta-v7";
 
 const DEFAULT_SETTINGS = {
   pageBackground: "#f4f1e8",
@@ -3474,7 +3474,9 @@ function renderSphereBoard() {
     placements.forEach((placement) => placementList.appendChild(createSpherePlacementNode(
       placement,
       sphere,
-      calculation
+      calculation,
+      null,
+      analysis.relativeUnknown
     )));
 
     const openLocations = sphereLocations.filter((location) => !placementByLocation.has(normalize(location)) && !isLocationMarked(location));
@@ -3529,11 +3531,80 @@ function renderSphereBoard() {
   }));
 }
 
+// Maps cumulative copy count (1-based, including any copies already in starting
+// gear) to the image representing that upgrade tier. Tier 1 is intentionally
+// absent from each map - it's the item's own unupgraded/default image, already
+// handled by the normal itemImage(placement.item) fallback.
+const PROGRESSIVE_ITEM_STAGE_IMAGES = {
+  "progressive bow": { 2: "Fire and Ice Arrows", 3: "Light Arrow" },
+  "progressive sword": {
+    2: "Master Sword (Uncharged)",
+    3: "Master Sword (Half Charged)",
+    4: "Master Sword (Fully Charged)"
+  },
+  "progressive picto box": { 2: "Deluxe Picto Box" }
+};
+
+// Counts how many OTHER placements of the same item are provably required
+// (directly or transitively, via the real dependency graph) to reach this
+// placement's location - i.e. true logical ancestors, not just "placed in an
+// earlier sphere". Sphere number alone doesn't prove order: two items can land
+// in different spheres purely because of unrelated prerequisites (e.g. a bow
+// gated behind a Hookshot found earlier, with no actual dependency on any other
+// bow copy), so only a real dependency chain counts as proof.
+function countProvenSameItemPredecessors(placement, samePlacements, calculation, relativeUnknown) {
+  const sameIds = new Set(samePlacements.map((candidate) => candidate.id));
+  const dependenciesOf = (id) => {
+    const source = state.sphere.placements.find((candidate) => candidate.id === id);
+    if (!source) return [];
+    return unique([
+      ...(calculation.dependencies?.[normalize(source.location)] || []),
+      ...(relativeUnknown?.dependencies?.get(id) || [])
+    ]);
+  };
+  const ancestors = new Set();
+  const pending = dependenciesOf(placement.id);
+  while (pending.length) {
+    const id = pending.pop();
+    if (!id || ancestors.has(id)) continue;
+    ancestors.add(id);
+    dependenciesOf(id).forEach((dependencyId) => pending.push(dependencyId));
+  }
+  return [...ancestors].filter((id) => id !== placement.id && sameIds.has(id)).length;
+}
+
+// A progressive item's upgrade tier isn't a placement fact - it's purely which
+// cumulative pickup count this copy represents (the same count-based rule the
+// logic engine uses; see PROGRESSIVE_ITEM_REQUIREMENTS in sphere-engine.js). This
+// only claims a specific tier when the dependency graph actually proves enough
+// other copies must come first; otherwise it shows the lowest tier still
+// consistent with what IS proven (e.g. two copies with no proven order between
+// them both show the base image, even if one happens to sit in a later sphere -
+// that alone doesn't mean it depends on the other. A third copy proven to
+// require both of the first two as prerequisites is still guaranteed to be the
+// 3rd cumulative copy, regardless of which of those two came first; and if only
+// one of two later copies is proven to depend on an earlier one, the two
+// remaining un-ordered copies both show that earlier one's next tier, not two
+// different guesses).
+function getProgressiveItemStageImageName(placement, calculation, relativeUnknown) {
+  const itemKey = normalize(placement.item);
+  const stageImages = PROGRESSIVE_ITEM_STAGE_IMAGES[itemKey];
+  if (!stageImages || placement.fromHint) return null;
+
+  const startingCount = (state.data.sphereStartingGear || [])
+    .filter((item) => normalize(item) === itemKey).length;
+  const samePlacements = state.sphere.placements.filter((candidate) => normalize(candidate.item) === itemKey);
+  const provenPredecessors = countProvenSameItemPredecessors(placement, samePlacements, calculation, relativeUnknown);
+
+  return stageImages[startingCount + provenPredecessors + 1] || null;
+}
+
 function createSpherePlacementNode(
   placement,
   sphere,
   calculation,
-  relativeDependencies = null
+  relativeDependencies = null,
+  relativeUnknown = null
 ) {
   const knownSphere = Number.isInteger(sphere);
   const outOfLogic = !Number.isInteger(calculation.locationSpheres[normalize(placement.location)]);
@@ -3567,7 +3638,7 @@ function createSpherePlacementNode(
   const icon = document.createElement("span");
   icon.className = "sphere-item-icon";
   const image = document.createElement("img");
-  image.src = itemImage(placement.item);
+  image.src = itemImage(getProgressiveItemStageImageName(placement, calculation, relativeUnknown) || placement.item);
   image.alt = "";
   icon.appendChild(image);
   const itemBadge = getItemNumberBadge(placement.item);
@@ -4151,7 +4222,8 @@ function renderSpherePredictionColumns(
       placement,
       null,
       calculation,
-      unique(relativeUnknown.dependencies.get(placement.id) || [])
+      unique(relativeUnknown.dependencies.get(placement.id) || []),
+      relativeUnknown
     )));
     acquiredShards.forEach((source) => list.appendChild(createSphereAcquiredShardNode(source)));
     autosaveItems.forEach((source) => list.appendChild(createSphereAutosaveItemNode(source)));
